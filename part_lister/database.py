@@ -1,12 +1,19 @@
 import sqlite3
+import os
+
+# Get the absolute path to the directory where this script is located
+_basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Define the path for the database file in the project root directory
+DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
 
 def init_db():
-    conn = sqlite3.connect('parts.db')
-    c = conn.cursor()
+    # If the database file already exists, remove it to start fresh.
+    if os.path.exists(DATABASE_PATH):
+        os.remove(DATABASE_PATH)
 
-    # Drop tables if they exist to start fresh
-    c.execute('DROP TABLE IF EXISTS parts')
-    c.execute('DROP TABLE IF EXISTS list_items')
+    conn = sqlite3.connect(DATABASE_PATH)
+    c = conn.cursor()
 
     # Create parts table
     c.execute('''
@@ -35,4 +42,4 @@ def init_db():
 
 if __name__ == '__main__':
     init_db()
-    print("Database initialized.")
+    print(f"Database initialized successfully at: {DATABASE_PATH}")

@@ -1,19 +1,33 @@
 import sqlite3
+import os
 from flask import Flask, render_template, request, redirect, url_for, session, g, flash
 
-# Configuration
-DATABASE = '../parts.db'
-# This should be a real secret key in a production environment
-ADMIN_PASSWORD = 'admin' # Simple hardcoded password
-SECRET_KEY = 'dev'
-
 app = Flask(__name__)
-app.config.from_object(__name__)
 
+# --- Configuration ---
+# Get the absolute path to the directory where this script is located
+_basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Define the path for the database file in the project root directory
+DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
+
+app.config['DATABASE'] = DATABASE_PATH
+app.config['SECRET_KEY'] = 'dev' # Use a real secret key in production
+ADMIN_PASSWORD = 'admin' # Simple hardcoded password
+
+# --- Database Handling ---
 def get_db():
-    """Opens a new database connection if there is none yet for the current application context."""
+    """
+    Opens a new database connection if there is none yet for the current application context.
+    Also, adds a check to ensure the database file exists.
+    """
+    db_path = app.config['DATABASE']
+    if not os.path.exists(db_path):
+        # This will cause a server error, but the log will clearly state the file is missing.
+        raise FileNotFoundError(f"Database file not found at the expected path: {os.path.abspath(db_path)}")
+
     if not hasattr(g, 'sqlite_db'):
-        g.sqlite_db = sqlite3.connect(app.config['DATABASE'])
+        g.sqlite_db = sqlite3.connect(db_path)
         g.sqlite_db.row_factory = sqlite3.Row
     return g.sqlite_db
 
@@ -23,6 +37,7 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
+# --- Admin & Part Management Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -41,23 +56,6 @@ def logout():
     flash('You were logged out')
     return redirect(url_for('login'))
 
-@app.route('/')
-def index():
-    db = get_db()
-    # Get items from the list, joining with parts to get details
-    cur = db.execute('''
-        SELECT li.id, p.barcode, p.description, li.quantity
-        FROM list_items li
-        JOIN parts p ON li.part_id = p.id
-        ORDER BY li.id
-    ''')
-    list_items = cur.fetchall()
-
-    # Check for and display any error messages
-    error = session.pop('error', None)
-
-    return render_template('index.html', list_items=list_items, error=error)
-
 @app.route('/admin')
 def admin():
     if not session.get('logged_in'):
@@ -73,7 +71,6 @@ def add_part():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
 
-    # Validation
     if not request.form['barcode'] or not request.form['description']:
         flash('Error: Barcode and Description are required.')
         return redirect(url_for('admin'))
@@ -106,7 +103,6 @@ def edit_part(part_id):
         return redirect(url_for('admin'))
 
     if request.method == 'POST':
-        # Validation
         if not request.form['barcode'] or not request.form['description']:
             flash('Error: Barcode and Description are required.')
             return render_template('edit_part.html', part=part)
@@ -136,6 +132,22 @@ def delete_part(part_id):
     db.commit()
     flash('Part was successfully deleted')
     return redirect(url_for('admin'))
+
+# --- Main List-Building Routes ---
+@app.route('/')
+def index():
+    db = get_db()
+    cur = db.execute('''
+        SELECT li.id, p.barcode, p.description, li.quantity
+        FROM list_items li
+        JOIN parts p ON li.part_id = p.id
+        ORDER BY li.id
+    ''')
+    list_items = cur.fetchall()
+
+    error = session.pop('error', None)
+
+    return render_template('index.html', list_items=list_items, error=error)
 
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
@@ -189,6 +201,7 @@ def delete_list_item(item_id):
     db.commit()
     return redirect(url_for('index'))
 
+# --- Print Route ---
 @app.route('/print')
 def print_list():
     db = get_db()
@@ -201,6 +214,6 @@ def print_list():
     list_items = cur.fetchall()
     return render_template('print.html', list_items=list_items)
 
-
+# --- Main Execution ---
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
