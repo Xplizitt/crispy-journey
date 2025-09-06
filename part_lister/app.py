@@ -42,7 +42,7 @@ def close_db(error):
 def login():
     error = None
     if request.method == 'POST':
-        if request.form['password'] == app.config['ADMIN_PASSWORD']:
+        if request.form['password'] == ADMIN_PASSWORD:
             session['logged_in'] = True
             flash('You were logged in')
             return redirect(url_for('admin'))
