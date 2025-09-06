@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Part List</title>
+</head>
+<body onload="window.print()">
+    <h1>Part List</h1>
+    <table border="1" cellpadding="5" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th>Barcode</th>
+                <th>Description</th>
+                <th>Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in list_items %}
+            <tr>
+                <td>{{ item['barcode'] }}</td>
+                <td>{{ item['description'] }}</td>
+                <td>{{ item['quantity'] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3">No items in list.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

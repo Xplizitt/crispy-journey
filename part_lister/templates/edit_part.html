@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Part</title>
+</head>
+<body>
+    <h1>Edit Part</h1>
+    <form method="post">
+        <label for="barcode">Barcode:</label><br>
+        <input type="text" name="barcode" id="barcode" value="{{ part['barcode'] }}"><br>
+        <label for="description">Description:</label><br>
+        <input type="text" name="description" id="description" value="{{ part['description'] }}"><br>
+        <label for="part_number">Part Number:</label><br>
+        <input type="text" name="part_number" id="part_number" value="{{ part['part_number'] }}"><br>
+        <label for="uom">Unit of Measure:</label><br>
+        <input type="text" name="uom" id="uom" value="{{ part['uom'] }}"><br>
+        <label for="supplier_name">Supplier Name:</label><br>
+        <input type="text" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}"><br><br>
+        <input type="submit" value="Update Part">
+    </form>
+    <p><a href="{{ url_for('admin') }}">Cancel</a></p>
+</body>
+</html>

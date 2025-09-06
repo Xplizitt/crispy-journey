@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Part Lister</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+</head>
+<body onload="document.getElementById('barcode').focus()">
+    <h1>Part List</h1>
+
+    {% if error %}
+        <p style="color:red;"><b>{{ error }}</b></p>
+    {% endif %}
+
+    <form action="{{ url_for('add_to_list') }}" method="post">
+        <label for="barcode">Barcode:</label>
+        <input type="text" name="barcode" id="barcode" size="20">
+        <label for="quantity">Quantity:</label>
+        <input type="text" name="quantity" id="quantity" size="5" value="1">
+        <input type="submit" value="Add Item">
+    </form>
+
+    <hr>
+
+    <h2>Current List</h2>
+    <table border="1" cellpadding="5" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+                <th>Barcode</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in list_items %}
+            <tr>
+                <td>{{ item['barcode'] }}</td>
+                <td>{{ item['description'] }}</td>
+                <td>{{ item['quantity'] }}</td>
+                <td>
+                    <a href="{{ url_for('edit_list_item', item_id=item['id']) }}">Edit</a>
+                    <a href="{{ url_for('delete_list_item', item_id=item['id']) }}">Delete</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No items in list.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <br>
+    <form action="{{ url_for('print_list') }}" method="get" target="_blank">
+        <input type="submit" value="Print List">
+    </form>
+
+</body>
+</html>
