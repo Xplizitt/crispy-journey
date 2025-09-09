@@ -10,6 +10,7 @@
             <tr>
                 <th>Barcode</th>
                 <th>Description</th>
+                <th>UOM</th>
                 <th>Quantity</th>
             </tr>
         </thead>
@@ -18,11 +19,12 @@
             <tr>
                 <td>{{ item['barcode'] }}</td>
                 <td>{{ item['description'] }}</td>
+                <td>{{ item['uom'] }}</td>
                 <td>{{ item['quantity'] }}</td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="3">No items in list.</td>
+                <td colspan="4">No items in list.</td>
             </tr>
             {% endfor %}
         </tbody>

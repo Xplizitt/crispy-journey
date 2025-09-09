@@ -138,7 +138,7 @@ def delete_part(part_id):
 def index():
     db = get_db()
     cur = db.execute('''
-        SELECT li.id, p.barcode, p.description, li.quantity
+        SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         ORDER BY li.id
@@ -206,7 +206,7 @@ def delete_list_item(item_id):
 def print_list():
     db = get_db()
     cur = db.execute('''
-        SELECT p.barcode, p.description, li.quantity
+        SELECT p.barcode, p.description, li.quantity, p.uom
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         ORDER BY li.id
