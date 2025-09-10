@@ -1,6 +1,8 @@
 import sqlite3
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, g, flash
+import csv
+import io
+from flask import Flask, render_template, request, redirect, url_for, session, g, flash, Response
 
 app = Flask(__name__)
 
@@ -62,7 +64,32 @@ def admin():
         return redirect(url_for('login'))
 
     db = get_db()
-    cur = db.execute('SELECT * FROM parts ORDER BY id desc')
+
+    # Filtering logic
+    filter_description = request.args.get('filter_description')
+    filter_supplier = request.args.get('filter_supplier')
+    filter_part_number = request.args.get('filter_part_number')
+
+    query = 'SELECT * FROM parts'
+    conditions = []
+    params = []
+
+    if filter_description:
+        conditions.append('description LIKE ?')
+        params.append(f'%{filter_description}%')
+    if filter_supplier:
+        conditions.append('supplier_name LIKE ?')
+        params.append(f'%{filter_supplier}%')
+    if filter_part_number:
+        conditions.append('part_number LIKE ?')
+        params.append(f'%{filter_part_number}%')
+
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+
+    query += ' ORDER BY id desc'
+
+    cur = db.execute(query, params)
     parts = cur.fetchall()
     return render_template('admin.html', parts=parts)
 
@@ -131,6 +158,108 @@ def delete_part(part_id):
     db.execute('DELETE FROM parts WHERE id = ?', [part_id])
     db.commit()
     flash('Part was successfully deleted')
+    return redirect(url_for('admin'))
+
+@app.route('/export_parts')
+def export_parts():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    db = get_db()
+
+    # Reuse filtering logic from admin route
+    filter_description = request.args.get('filter_description')
+    filter_supplier = request.args.get('filter_supplier')
+    filter_part_number = request.args.get('filter_part_number')
+
+    query = 'SELECT barcode, description, part_number, uom, supplier_name FROM parts'
+    conditions = []
+    params = []
+
+    if filter_description:
+        conditions.append('description LIKE ?')
+        params.append(f'%{filter_description}%')
+    if filter_supplier:
+        conditions.append('supplier_name LIKE ?')
+        params.append(f'%{filter_supplier}%')
+    if filter_part_number:
+        conditions.append('part_number LIKE ?')
+        params.append(f'%{filter_part_number}%')
+
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+
+    query += ' ORDER BY id desc'
+
+    cur = db.execute(query, params)
+    parts = cur.fetchall()
+
+    # Generate CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(['Barcode', 'Description', 'Part Number', 'UOM', 'Supplier Name'])
+
+    # Write data
+    for part in parts:
+        writer.writerow([part['barcode'], part['description'], part['part_number'], part['uom'], part['supplier_name']])
+
+    output.seek(0)
+
+    return Response(output,
+                    mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment;filename=parts.csv"})
+
+@app.route('/import_parts', methods=['POST'])
+def import_parts():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(url_for('admin'))
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(url_for('admin'))
+
+    if file and file.filename.endswith('.csv'):
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.reader(stream)
+
+        # Skip header row
+        next(csv_input, None)
+
+        db = get_db()
+        imported_count = 0
+        skipped_count = 0
+
+        for row in csv_input:
+            if len(row) < 5:
+                continue # Skip malformed rows
+
+            barcode, description, part_number, uom, supplier_name = row
+
+            if not barcode or not description:
+                skipped_count += 1
+                continue
+
+            try:
+                db.execute('''
+                    INSERT INTO parts (barcode, description, part_number, uom, supplier_name)
+                    VALUES (?, ?, ?, ?, ?)''',
+                    (barcode, description, part_number, uom, supplier_name))
+                db.commit()
+                imported_count += 1
+            except sqlite3.IntegrityError:
+                skipped_count += 1
+
+        flash(f'Successfully imported {imported_count} parts. Skipped {skipped_count} parts (duplicates or missing data).')
+    else:
+        flash('Invalid file type. Please upload a CSV file.')
+
     return redirect(url_for('admin'))
 
 # --- Main List-Building Routes ---
