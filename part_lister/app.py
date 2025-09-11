@@ -15,7 +15,7 @@ DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
 
 app.config['DATABASE'] = DATABASE_PATH
 app.config['SECRET_KEY'] = 'dev' # Use a real secret key in production
-app.config['ADMIN_PASSWORD'] = 'admin' # Simple hardcoded password
+ADMIN_PASSWORD = 'admin' # Simple hardcoded password
 
 # --- Database Handling ---
 def get_db():
