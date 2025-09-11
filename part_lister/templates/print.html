@@ -2,6 +2,9 @@
 <html>
 <head>
     <title>Print Part List</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
 </head>
 <body onload="window.print()">
     <h1>Part List</h1>
@@ -10,6 +13,7 @@
             <tr>
                 <th>Barcode</th>
                 <th>Description</th>
+                <th>UOM</th>
                 <th>Quantity</th>
             </tr>
         </thead>
@@ -18,11 +22,12 @@
             <tr>
                 <td>{{ item['barcode'] }}</td>
                 <td>{{ item['description'] }}</td>
+                <td>{{ item['uom'] }}</td>
                 <td>{{ item['quantity'] }}</td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="3">No items in list.</td>
+                <td colspan="4">No items in list.</td>
             </tr>
             {% endfor %}
         </tbody>
