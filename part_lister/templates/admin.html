@@ -8,7 +8,7 @@
     <p><a href="{{ url_for('logout') }}">Logout</a></p>
 
     <h2>Add New Part</h2>
-    <form action="{{ url_for('add_part') }}" method="post">
+    <form action="{{ url_for('add_part') }}" method="post" enctype="multipart/form-data">
         <label for="barcode">Barcode:</label><br>
         <input type="text" name="barcode" id="barcode"><br>
         <label for="description">Description:</label><br>
@@ -18,7 +18,9 @@
         <label for="uom">Unit of Measure:</label><br>
         <input type="text" name="uom" id="uom"><br>
         <label for="supplier_name">Supplier Name:</label><br>
-        <input type="text" name="supplier_name" id="supplier_name"><br><br>
+        <input type="text" name="supplier_name" id="supplier_name"><br>
+        <label for="attachments">Attachments:</label><br>
+        <input type="file" name="attachments" id="attachments" multiple><br><br>
         <input type="submit" value="Add Part">
     </form>
 
@@ -51,22 +53,36 @@
     <table border="1" cellpadding="5" cellspacing="0">
         <thead>
             <tr>
+                <th>Thumbnail</th>
                 <th>Barcode</th>
                 <th>Description</th>
                 <th>Part Number</th>
                 <th>UOM</th>
                 <th>Supplier</th>
+                <th>Attachments</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for part in parts %}
             <tr>
+                <td>
+                    {% if part.thumbnail %}
+                        <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" width="100">
+                    {% endif %}
+                </td>
                 <td>{{ part['barcode'] }}</td>
                 <td>{{ part['description'] }}</td>
                 <td>{{ part['part_number'] }}</td>
                 <td>{{ part['uom'] }}</td>
                 <td>{{ part['supplier_name'] }}</td>
+                <td>
+                    {% if part.attachments %}
+                        {% for attachment in part.attachments.split(',') %}
+                            <a href="{{ url_for('uploaded_file', filename=attachment) }}" target="_blank">{{ attachment }}</a><br>
+                        {% endfor %}
+                    {% endif %}
+                </td>
                 <td>
                     <a href="{{ url_for('edit_part', part_id=part['id']) }}">Edit</a>
                     <a href="{{ url_for('delete_part', part_id=part['id']) }}" onclick="return confirm('Are you sure you want to delete this part?');">Delete</a>
@@ -90,7 +106,13 @@
                         if (nextIndex < inputs.length) {
                             inputs[nextIndex].focus();
                         } else {
-                            submitButton.focus();
+                            // Find the file input and focus it, or the submit button
+                            const fileInput = form.querySelector('input[type="file"]');
+                            if (fileInput) {
+                                fileInput.focus();
+                            } else {
+                                submitButton.focus();
+                            }
                         }
                     }
                 });

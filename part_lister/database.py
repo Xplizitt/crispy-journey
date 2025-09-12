@@ -23,7 +23,8 @@ def init_db():
             description TEXT NOT NULL,
             part_number TEXT,
             uom TEXT,
-            supplier_name TEXT
+            supplier_name TEXT,
+            thumbnail TEXT
         )
     ''')
 
@@ -33,6 +34,17 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             part_id INTEGER NOT NULL,
             quantity INTEGER NOT NULL,
+            FOREIGN KEY (part_id) REFERENCES parts (id)
+        )
+    ''')
+
+    # Create attachments table
+    c.execute('''
+        CREATE TABLE attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            part_id INTEGER NOT NULL,
+            filename TEXT NOT NULL,
+            filepath TEXT NOT NULL,
             FOREIGN KEY (part_id) REFERENCES parts (id)
         )
     ''')
