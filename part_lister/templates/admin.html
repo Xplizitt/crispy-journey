@@ -24,29 +24,6 @@
 
     <hr>
 
-    <h2>Filter Parts</h2>
-    <form action="{{ url_for('admin') }}" method="get">
-        <label for="filter_description">Part Name:</label>
-        <input type="text" name="filter_description" id="filter_description" value="{{ request.args.get('filter_description', '') }}">
-        <label for="filter_supplier">Supplier:</label>
-        <input type="text" name="filter_supplier" id="filter_supplier" value="{{ request.args.get('filter_supplier', '') }}">
-        <label for="filter_part_number">Part Number:</label>
-        <input type="text" name="filter_part_number" id="filter_part_number" value="{{ request.args.get('filter_part_number', '') }}">
-        <input type="submit" value="Filter">
-        <a href="{{ url_for('admin') }}">Clear</a>
-        <a href="{{ url_for('export_parts', **request.args) }}" style="margin-left: 10px;">Export to CSV</a>
-    </form>
-
-    <hr>
-
-    <h2>Import Parts from CSV</h2>
-    <form action="{{ url_for('import_parts') }}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".csv">
-        <input type="submit" value="Import">
-    </form>
-
-    <hr>
-
     <h2>Existing Parts</h2>
     <table border="1" cellpadding="5" cellspacing="0">
         <thead>
@@ -75,27 +52,5 @@
             {% endfor %}
         </tbody>
     </table>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form[action="{{ url_for('add_part') }}"]');
-            const inputs = Array.from(form.querySelectorAll('input[type="text"]'));
-            const submitButton = form.querySelector('input[type="submit"]');
-
-            inputs.forEach((input, index) => {
-                input.addEventListener('keydown', function(event) {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        const nextIndex = index + 1;
-                        if (nextIndex < inputs.length) {
-                            inputs[nextIndex].focus();
-                        } else {
-                            submitButton.focus();
-                        }
-                    }
-                });
-            });
-        });
-    </script>
 </body>
 </html>

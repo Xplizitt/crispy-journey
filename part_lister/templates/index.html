@@ -6,14 +6,14 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 </head>
-<body>
+<body onload="document.getElementById('barcode').focus()">
     <h1>Part List</h1>
 
     {% if error %}
         <p style="color:red;"><b>{{ error }}</b></p>
     {% endif %}
 
-    <form action="{{ url_for('add_to_list') }}" method="post" id="add-item-form">
+    <form action="{{ url_for('add_to_list') }}" method="post">
         <label for="barcode">Barcode:</label>
         <input type="text" name="barcode" id="barcode" size="20">
         <label for="quantity">Quantity:</label>
@@ -64,13 +64,5 @@
         <input type="submit" value="Manage Parts">
     </form>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    <script>
-        window.onload = function() {
-            setupTitleUpdates();
-            setupEnterKeyRedirect('add-item-form', 'barcode', 'quantity');
-            document.getElementById('barcode').focus();
-        };
-    </script>
 </body>
 </html>
