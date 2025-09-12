@@ -5,7 +5,7 @@
 </head>
 <body>
     <h1>Edit Part</h1>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <label for="barcode">Barcode:</label><br>
         <input type="text" name="barcode" id="barcode" value="{{ part['barcode'] }}"><br>
         <label for="description">Description:</label><br>
@@ -16,9 +16,34 @@
         <input type="text" name="uom" id="uom" value="{{ part['uom'] }}"><br>
         <label for="supplier_name">Supplier Name:</label><br>
         <input type="text" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}"><br><br>
+
+        <label for="attachments">Add Attachments:</label><br>
+        <input type="file" name="attachments" id="attachments" multiple><br><br>
+
         <input type="submit" value="Update Part">
     </form>
-    <p><a href="{{ url_for('admin') }}">Cancel</a></p>
+
+    <h2>Current Thumbnail</h2>
+    {% if part.thumbnail %}
+        <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" width="100">
+    {% else %}
+        <p>No thumbnail.</p>
+    {% endif %}
+
+    <h2>Current Attachments</h2>
+    <ul>
+        {% for attachment in attachments %}
+            <li>
+                <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank">{{ attachment.filename }}</a>
+                <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" onclick="return confirm('Are you sure you want to delete this attachment?');" style="color:red; margin-left: 10px;">Delete</a>
+            </li>
+        {% else %}
+            <li>No attachments.</li>
+        {% endfor %}
+    </ul>
+
+    <p><a href="{{ url_for('admin') }}">Back to Admin</a></p>
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script>
         window.onload = function() {
