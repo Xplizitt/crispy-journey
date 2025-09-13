@@ -118,10 +118,10 @@ def add_part():
     thumbnail_path = None
     try:
         cur = db.execute('''
-            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, thumbnail)
-            VALUES (?, ?, ?, ?, ?, ?)''',
+            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, notes, thumbnail)
+            VALUES (?, ?, ?, ?, ?, ?, ?)''',
             [request.form['barcode'], request.form['description'], request.form['part_number'],
-             request.form['uom'], request.form['supplier_name'], None])
+             request.form['uom'], request.form['supplier_name'], request.form['notes'], None])
         db.commit()
         part_id = cur.lastrowid
         flash('New part was successfully added')
@@ -167,10 +167,10 @@ def edit_part(part_id):
 
         try:
             db.execute('''
-                UPDATE parts SET barcode = ?, description = ?, part_number = ?, uom = ?, supplier_name = ?
+                UPDATE parts SET barcode = ?, description = ?, part_number = ?, uom = ?, supplier_name = ?, notes = ?
                 WHERE id = ?''',
                 [request.form['barcode'], request.form['description'], request.form['part_number'],
-                 request.form['uom'], request.form['supplier_name'], part_id])
+                 request.form['uom'], request.form['supplier_name'], request.form['notes'], part_id])
             db.commit()
             flash('Part was successfully updated')
         except sqlite3.IntegrityError:
@@ -437,7 +437,7 @@ def delete_list_item(item_id):
 def print_list():
     db = get_db()
     cur = db.execute('''
-        SELECT p.barcode, p.description, li.quantity, p.uom
+        SELECT p.barcode, p.description, li.quantity, p.uom, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         ORDER BY li.id

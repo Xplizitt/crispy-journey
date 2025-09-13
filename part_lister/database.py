@@ -24,7 +24,8 @@ def init_db():
             part_number TEXT,
             uom TEXT,
             supplier_name TEXT,
-            thumbnail TEXT
+            thumbnail TEXT,
+            notes TEXT
         )
     ''')
 

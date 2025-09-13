@@ -24,10 +24,11 @@
     <hr>
 
     <h2>Current List</h2>
+    <button id="toggle-thumbnails-btn">Toggle Thumbnails</button>
     <table border="1" cellpadding="5" cellspacing="0" width="100%">
         <thead>
             <tr>
-                <th>Thumbnail</th>
+                <th class="thumbnail-col">Thumbnail</th>
                 <th>Barcode</th>
                 <th>Description</th>
                 <th>UOM</th>
@@ -39,7 +40,7 @@
         <tbody>
             {% for item in list_items %}
             <tr>
-                <td>
+                <td class="thumbnail-col">
                     {% if item.thumbnail %}
                         <img src="{{ url_for('serve_thumbnail', filename=item.thumbnail) }}" alt="Thumbnail" width="100">
                     {% endif %}
@@ -73,7 +74,6 @@
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script>
         window.onload = function() {
-            setupTitleUpdates();
             setupEnterKeyRedirect('add-item-form', 'barcode', 'quantity');
             document.getElementById('barcode').focus();
         };

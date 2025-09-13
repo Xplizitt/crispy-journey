@@ -5,12 +5,21 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <style>
+        @media print {
+            #toggle-thumbnails-btn-print {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body onload="window.print()">
     <h1>Part List</h1>
+    <button id="toggle-thumbnails-btn-print">Toggle Thumbnails</button>
     <table border="1" cellpadding="5" cellspacing="0" width="100%">
         <thead>
             <tr>
+                <th class="thumbnail-col">Thumbnail</th>
                 <th>Barcode</th>
                 <th>Description</th>
                 <th>UOM</th>
@@ -20,6 +29,11 @@
         <tbody>
             {% for item in list_items %}
             <tr>
+                <td class="thumbnail-col">
+                    {% if item.thumbnail %}
+                        <img src="{{ url_for('serve_thumbnail', filename=item.thumbnail, _external=True) }}" alt="Thumbnail" width="100">
+                    {% endif %}
+                </td>
                 <td>{{ item['barcode'] }}</td>
                 <td>{{ item['description'] }}</td>
                 <td>{{ item['uom'] }}</td>

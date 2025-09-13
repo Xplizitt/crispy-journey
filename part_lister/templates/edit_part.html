@@ -15,7 +15,9 @@
         <label for="uom">Unit of Measure:</label><br>
         <input type="text" name="uom" id="uom" value="{{ part['uom'] }}"><br>
         <label for="supplier_name">Supplier Name:</label><br>
-        <input type="text" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}"><br><br>
+        <input type="text" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}"><br>
+        <label for="notes">Notes:</label><br>
+        <textarea name="notes" id="notes">{{ part['notes'] }}</textarea><br><br>
 
         <label for="attachments">Add Attachments:</label><br>
         <input type="file" name="attachments" id="attachments" multiple><br><br>
