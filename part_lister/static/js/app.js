@@ -77,9 +77,34 @@
         if (printToggleBtn) {
             printToggleBtn.addEventListener('click', () => {
                 showThumbnails = !showThumbnails;
-                // Note: localStorage won't persist in the print view in the same way,
-                // but this allows toggling for the current print action.
                 applyThumbnailVisibility();
+            });
+        }
+    }
+
+    function setupAdminFormEnterKey() {
+        const form = document.querySelector('form[action*="add_part"]');
+        if (form) {
+            const inputs = Array.from(form.querySelectorAll('input[type="text"], textarea'));
+            const submitButton = form.querySelector('input[type="submit"]');
+
+            inputs.forEach((input, index) => {
+                input.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        const nextIndex = index + 1;
+                        if (nextIndex < inputs.length) {
+                            inputs[nextIndex].focus();
+                        } else {
+                            const fileInput = form.querySelector('input[type="file"]');
+                            if (fileInput) {
+                                fileInput.focus();
+                            } else {
+                                submitButton.focus();
+                            }
+                        }
+                    }
+                });
             });
         }
     }
@@ -88,5 +113,15 @@
     document.addEventListener('DOMContentLoaded', function() {
         setupTitleUpdates();
         setupThumbnailToggle();
+        setupAdminFormEnterKey();
+
+        // Specific setup for index page
+        if (document.getElementById('add-item-form')) {
+            setupEnterKeyRedirect('add-item-form', 'barcode', 'quantity');
+            const barcodeInput = document.getElementById('barcode');
+            if(barcodeInput) {
+                barcodeInput.focus();
+            }
+        }
     });
 })();
