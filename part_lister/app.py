@@ -430,7 +430,7 @@ def import_parts():
         for row in csv_input:
             if len(row) < 5:
                 continue
-            barcode, description, part_number, uom, supplier_name = row
+            barcode, description, part_number, uom, supplier_name = row[:5] # Take the first 5 columns
             if not barcode or not description:
                 skipped_count += 1
                 continue
