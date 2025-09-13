@@ -51,4 +51,42 @@
             }
         }
     };
+
+    function setupThumbnailToggle() {
+        const toggleBtn = document.getElementById('toggle-thumbnails-btn');
+        const printToggleBtn = document.getElementById('toggle-thumbnails-btn-print');
+        const thumbnailCols = document.querySelectorAll('.thumbnail-col');
+        let showThumbnails = localStorage.getItem('showThumbnails') !== 'false';
+
+        function applyThumbnailVisibility() {
+            thumbnailCols.forEach(col => {
+                col.style.display = showThumbnails ? '' : 'none';
+            });
+        }
+
+        applyThumbnailVisibility();
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                showThumbnails = !showThumbnails;
+                localStorage.setItem('showThumbnails', showThumbnails);
+                applyThumbnailVisibility();
+            });
+        }
+
+        if (printToggleBtn) {
+            printToggleBtn.addEventListener('click', () => {
+                showThumbnails = !showThumbnails;
+                // Note: localStorage won't persist in the print view in the same way,
+                // but this allows toggling for the current print action.
+                applyThumbnailVisibility();
+            });
+        }
+    }
+
+    // Run on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        setupTitleUpdates();
+        setupThumbnailToggle();
+    });
 })();

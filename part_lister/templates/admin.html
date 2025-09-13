@@ -19,6 +19,8 @@
         <input type="text" name="uom" id="uom"><br>
         <label for="supplier_name">Supplier Name:</label><br>
         <input type="text" name="supplier_name" id="supplier_name"><br>
+        <label for="notes">Notes:</label><br>
+        <textarea name="notes" id="notes"></textarea><br>
         <label for="attachments">Attachments:</label><br>
         <input type="file" name="attachments" id="attachments" multiple><br><br>
         <input type="submit" value="Add Part">
@@ -50,15 +52,17 @@
     <hr>
 
     <h2>Existing Parts</h2>
+    <button id="toggle-thumbnails-btn">Toggle Thumbnails</button>
     <table border="1" cellpadding="5" cellspacing="0">
         <thead>
             <tr>
-                <th>Thumbnail</th>
+                <th class="thumbnail-col">Thumbnail</th>
                 <th>Barcode</th>
                 <th>Description</th>
                 <th>Part Number</th>
                 <th>UOM</th>
                 <th>Supplier</th>
+                <th>Notes</th>
                 <th>Attachments</th>
                 <th>Actions</th>
             </tr>
@@ -66,7 +70,7 @@
         <tbody>
             {% for part in parts %}
             <tr>
-                <td>
+                <td class="thumbnail-col">
                     {% if part.thumbnail %}
                         <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" width="100">
                     {% endif %}
@@ -76,6 +80,7 @@
                 <td>{{ part['part_number'] }}</td>
                 <td>{{ part['uom'] }}</td>
                 <td>{{ part['supplier_name'] }}</td>
+                <td>{{ part['notes'] }}</td>
                 <td>
                     {% if part.attachments %}
                         {% for attachment in part.attachments.split(',') %}
