@@ -77,8 +77,6 @@
         if (printToggleBtn) {
             printToggleBtn.addEventListener('click', () => {
                 showThumbnails = !showThumbnails;
-                // Note: localStorage won't persist in the print view in the same way,
-                // but this allows toggling for the current print action.
                 applyThumbnailVisibility();
             });
         }
@@ -88,5 +86,14 @@
     document.addEventListener('DOMContentLoaded', function() {
         setupTitleUpdates();
         setupThumbnailToggle();
+
+        // Specific setup for index page
+        if (document.getElementById('add-item-form')) {
+            setupEnterKeyRedirect('add-item-form', 'barcode', 'quantity');
+            const barcodeInput = document.getElementById('barcode');
+            if(barcodeInput) {
+                barcodeInput.focus();
+            }
+        }
     });
 })();

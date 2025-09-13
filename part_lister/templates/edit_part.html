@@ -1,56 +1,64 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Part</title>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Edit Part{% endblock %}
+
+{% block content %}
     <h1>Edit Part</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label for="barcode">Barcode:</label><br>
-        <input type="text" name="barcode" id="barcode" value="{{ part['barcode'] }}"><br>
-        <label for="description">Description:</label><br>
-        <input type="text" name="description" id="description" value="{{ part['description'] }}"><br>
-        <label for="part_number">Part Number:</label><br>
-        <input type="text" name="part_number" id="part_number" value="{{ part['part_number'] }}"><br>
-        <label for="uom">Unit of Measure:</label><br>
-        <input type="text" name="uom" id="uom" value="{{ part['uom'] }}"><br>
-        <label for="supplier_name">Supplier Name:</label><br>
-        <input type="text" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}"><br>
-        <label for="notes">Notes:</label><br>
-        <textarea name="notes" id="notes">{{ part['notes'] }}</textarea><br><br>
+    <hr>
+    <div class="row">
+        <div class="col-md-8">
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="barcode" class="form-label">Barcode:</label>
+                    <input type="text" class="form-control" name="barcode" id="barcode" value="{{ part['barcode'] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <input type="text" class="form-control" name="description" id="description" value="{{ part['description'] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="part_number" class="form-label">Part Number:</label>
+                    <input type="text" class="form-control" name="part_number" id="part_number" value="{{ part['part_number'] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="uom" class="form-label">Unit of Measure:</label>
+                    <input type="text" class="form-control" name="uom" id="uom" value="{{ part['uom'] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="supplier_name" class="form-label">Supplier Name:</label>
+                    <input type="text" class="form-control" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}">
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes:</label>
+                    <textarea class="form-control" name="notes" id="notes">{{ part['notes'] }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="attachments" class="form-label">Add Attachments:</label>
+                    <input type="file" class="form-control" name="attachments" id="attachments" multiple>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Part</button>
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary">Back to Admin</a>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <h2>Current Thumbnail</h2>
+            {% if part.thumbnail %}
+                <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" class="img-fluid rounded">
+            {% else %}
+                <p>No thumbnail.</p>
+            {% endif %}
 
-        <label for="attachments">Add Attachments:</label><br>
-        <input type="file" name="attachments" id="attachments" multiple><br><br>
-
-        <input type="submit" value="Update Part">
-    </form>
-
-    <h2>Current Thumbnail</h2>
-    {% if part.thumbnail %}
-        <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" width="100">
-    {% else %}
-        <p>No thumbnail.</p>
-    {% endif %}
-
-    <h2>Current Attachments</h2>
-    <ul>
-        {% for attachment in attachments %}
-            <li>
-                <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank">{{ attachment.filename }}</a>
-                <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" onclick="return confirm('Are you sure you want to delete this attachment?');" style="color:red; margin-left: 10px;">Delete</a>
-            </li>
-        {% else %}
-            <li>No attachments.</li>
-        {% endfor %}
-    </ul>
-
-    <p><a href="{{ url_for('admin') }}">Back to Admin</a></p>
-
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    <script>
-        window.onload = function() {
-            setupTitleUpdates();
-        };
-    </script>
-</body>
-</html>
+            <h2 class="mt-4">Current Attachments</h2>
+            <ul class="list-group">
+                {% for attachment in attachments %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank">{{ attachment.filename }}</a>
+                        <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this attachment?');">Delete</a>
+                    </li>
+                {% else %}
+                    <li class="list-group-item">No attachments.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}
