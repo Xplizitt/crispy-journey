@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Image Gallery{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center">
+    <h1>Image Gallery</h1>
+    <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">Back to Admin</a>
+</div>
+<hr>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Upload New Images
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('gallery') }}" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="files" class="form-label">Select images to upload:</label>
+                <input type="file" class="form-control" name="files" id="files" multiple required>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for image in images %}
+    <div class="col">
+        <div class="card h-100">
+            <img src="{{ url_for('uploaded_file', filename=image.filename) }}" class="card-img-top" alt="{{ image.filename }}" style="aspect-ratio: 1 / 1; object-fit: cover;">
+            <div class="card-body">
+                <p class="card-text small text-truncate">{{ image.filename }}</p>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('delete_image', image_id=image.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to permanently delete this image? This cannot be undone.');">Delete Image</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col">
+        <p>No images found in the gallery. Upload some!</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

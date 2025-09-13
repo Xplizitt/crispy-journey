@@ -43,10 +43,10 @@ def init_db():
     c.execute('''
         CREATE TABLE attachments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            part_id INTEGER NOT NULL,
+            part_id INTEGER,
             filename TEXT NOT NULL,
             filepath TEXT NOT NULL,
-            FOREIGN KEY (part_id) REFERENCES parts (id)
+            FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE SET NULL
         )
     ''')
 
