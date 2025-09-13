@@ -78,6 +78,7 @@
                             <button type="submit" class="btn btn-primary">Filter</button>
                             <a href="{{ url_for('admin') }}" class="btn btn-secondary">Clear</a>
                             <a href="{{ url_for('export_parts', **request.args) }}" class="btn btn-success">Export to CSV</a>
+                            <a href="{{ url_for('thumbnail_manager') }}" class="btn btn-info">Thumbnail Manager</a>
                         </div>
                     </form>
                 </div>

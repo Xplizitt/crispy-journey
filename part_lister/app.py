@@ -213,6 +213,20 @@ def edit_part(part_id):
 
     return render_template('edit_part.html', part=part, attachments=attachments)
 
+@app.route('/set_thumbnail_from_filename/<int:part_id>/<filename>')
+def set_thumbnail_from_filename(part_id, filename):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    db = get_db()
+    # We are using filename here because the thumbnail manager query doesn't have attachment id
+    cur = db.execute('SELECT id FROM attachments WHERE part_id = ? AND filename = ?', [part_id, filename])
+    attachment = cur.fetchone()
+    if attachment:
+        return set_thumbnail(part_id, attachment['id']) # Reuse existing logic
+    else:
+        flash('Attachment not found.')
+        return redirect(url_for('thumbnail_manager'))
+
 @app.route('/set_thumbnail/<int:part_id>/<int:attachment_id>')
 def set_thumbnail(part_id, attachment_id):
     if not session.get('logged_in'):
@@ -232,7 +246,11 @@ def set_thumbnail(part_id, attachment_id):
             flash('Error creating thumbnail.')
     else:
         flash('Attachment not found.')
+
+    if 'thumbnail_manager' in request.referrer:
+        return redirect(url_for('thumbnail_manager'))
     return redirect(url_for('edit_part', part_id=part_id))
+
 
 @app.route('/clear_thumbnail/<int:part_id>')
 def clear_thumbnail(part_id):
@@ -242,6 +260,9 @@ def clear_thumbnail(part_id):
     db.execute('UPDATE parts SET thumbnail = NULL WHERE id = ?', [part_id])
     db.commit()
     flash('Thumbnail cleared.')
+
+    if 'thumbnail_manager' in request.referrer:
+        return redirect(url_for('thumbnail_manager'))
     return redirect(url_for('edit_part', part_id=part_id))
 
 @app.route('/delete_attachment/<int:attachment_id>')
@@ -277,6 +298,44 @@ def delete_attachment(attachment_id):
         flash('Attachment not found')
 
     return redirect(url_for('edit_part', part_id=attachment['part_id']))
+
+
+@app.route('/bulk_thumbnail_action', methods=['POST'])
+def bulk_thumbnail_action():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    part_ids = request.form.getlist('part_ids')
+    action = request.form.get('bulk_action')
+
+    if not part_ids:
+        flash('No parts selected for bulk action.')
+        return redirect(url_for('thumbnail_manager'))
+
+    db = get_db()
+    if action == 'clear':
+        for part_id in part_ids:
+            db.execute('UPDATE parts SET thumbnail = NULL WHERE id = ?', [part_id])
+        db.commit()
+        flash(f'Cleared thumbnails for {len(part_ids)} parts.')
+    elif action == 'regenerate':
+        regenerated_count = 0
+        for part_id in part_ids:
+            cur = db.execute('SELECT thumbnail FROM parts WHERE id = ?', [part_id])
+            part = cur.fetchone()
+            if part and part['thumbnail']:
+                # The filename is in the format thumb_{part_id}_{original_filename}
+                original_filename = '_'.join(part['thumbnail'].split('_')[2:])
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+                thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], part['thumbnail'])
+                if os.path.exists(filepath):
+                    if create_thumbnail(filepath, thumbnail_path):
+                        regenerated_count += 1
+        flash(f'Regenerated {regenerated_count} thumbnails.')
+    else:
+        flash('Invalid bulk action.')
+
+    return redirect(url_for('thumbnail_manager'))
 
 
 @app.route('/bulk_edit', methods=['POST'])
@@ -507,6 +566,22 @@ def delete_list_item(item_id):
     return redirect(url_for('index'))
 
 # --- Print Route ---
+@app.route('/thumbnail_manager')
+def thumbnail_manager():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    db = get_db()
+    cur = db.execute('''
+        SELECT p.id, p.description, p.thumbnail, GROUP_CONCAT(a.filename) as images
+        FROM parts p
+        JOIN attachments a ON p.id = a.part_id
+        WHERE a.filename LIKE '%.jpg' OR a.filename LIKE '%.jpeg' OR a.filename LIKE '%.png' OR a.filename LIKE '%.gif'
+        GROUP BY p.id
+        ORDER BY p.id DESC
+    ''')
+    parts = cur.fetchall()
+    return render_template('thumbnail_manager.html', parts=parts)
+
 @app.route('/print')
 def print_list():
     db = get_db()
