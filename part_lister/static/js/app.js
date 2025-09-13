@@ -122,12 +122,146 @@
         }
     }
 
+    function setupAjaxAddToList() {
+        const form = document.getElementById('add-item-form');
+        if (!form) return;
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const barcode = formData.get('barcode');
+            const quantity = formData.get('quantity');
+
+            fetch('/add_to_list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ barcode: barcode, quantity: quantity }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const alertContainer = document.getElementById('alert-container');
+                // Clear previous alerts
+                alertContainer.innerHTML = '';
+
+                if (data.error) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.textContent = data.error;
+                    alertContainer.appendChild(errorDiv);
+                } else {
+                    // Add new item to the table
+                    const tableBody = document.querySelector('.table tbody');
+                    const noItemsRow = tableBody.querySelector('td[colspan="7"]');
+                    if (noItemsRow) {
+                        noItemsRow.parentElement.remove();
+                    }
+
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td class="thumbnail-col">${data.thumbnail ? `<img src="/thumbnails/${data.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
+                        <td>${data.barcode}</td>
+                        <td>${data.description}</td>
+                        <td>${data.uom}</td>
+                        <td>${data.supplier_name}</td>
+                        <td>${data.quantity}</td>
+                        <td>
+                            <a href="/edit_list_item/${data.id}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="/delete_list_item/${data.id}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    `;
+                    tableBody.appendChild(newRow);
+
+                    // Clear the form fields and refocus
+                    form.reset();
+                    document.getElementById('barcode').focus();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const alertContainer = document.getElementById('alert-container');
+                alertContainer.innerHTML = '<div class="alert alert-danger">An unexpected error occurred.</div>';
+            });
+        });
+    }
+
+    function setupAjaxAddPart() {
+        const form = document.querySelector('#adminAccordion form[action="/add_part"]');
+        if (!form) return;
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+
+            fetch('/add_part', {
+                method: 'POST',
+                body: formData, // No 'Content-Type' header needed, browser sets it for FormData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const adminAlertContainer = document.getElementById('admin-alert-container');
+                adminAlertContainer.innerHTML = ''; // Clear previous alerts
+
+                if (data.error) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.textContent = data.error;
+                    adminAlertContainer.appendChild(errorDiv);
+                } else {
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'alert alert-success';
+                    successDiv.textContent = `Successfully added part: ${data.description}`;
+                    adminAlertContainer.appendChild(successDiv);
+
+                    const tableBody = document.querySelector('.table tbody');
+                    const newRow = document.createElement('tr');
+
+                    let attachmentLinks = '';
+                    if (data.attachments) {
+                        attachmentLinks = data.attachments.split(',').map(name =>
+                            `<a href="/uploads/${name}" target="_blank">${name}</a>`
+                        ).join('<br>');
+                    }
+
+                    newRow.innerHTML = `
+                        <td><input type="checkbox" name="part_ids" value="${data.id}" class="part-checkbox"></td>
+                        <td class="thumbnail-col">${data.thumbnail ? `<img src="/thumbnails/${data.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
+                        <td>${data.barcode}</td>
+                        <td>${data.description}</td>
+                        <td>${data.part_number || ''}</td>
+                        <td>${data.uom || ''}</td>
+                        <td>${data.supplier_name || ''}</td>
+                        <td>${data.notes || ''}</td>
+                        <td>${attachmentLinks}</td>
+                        <td>
+                            <a href="/edit_part/${data.id}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="/delete_part/${data.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this part?');">Delete</a>
+                        </td>
+                    `;
+                    tableBody.prepend(newRow);
+
+                    form.reset();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const adminAlertContainer = document.getElementById('admin-alert-container');
+                adminAlertContainer.innerHTML = '<div class="alert alert-danger">An unexpected error occurred.</div>';
+            });
+        });
+    }
+
     // Run on page load
     document.addEventListener('DOMContentLoaded', function() {
         setupTitleUpdates();
         setupThumbnailToggle();
         setupThemeSwitcher();
         setupBulkEdit();
+        setupAjaxAddToList();
+        setupAjaxAddPart();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {

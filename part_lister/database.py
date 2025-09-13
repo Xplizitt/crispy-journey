@@ -14,6 +14,7 @@ def init_db():
 
     conn = sqlite3.connect(DATABASE_PATH)
     c = conn.cursor()
+    c.execute("PRAGMA foreign_keys = ON") # Enforce foreign key constraints
 
     # Create parts table
     c.execute('''
@@ -29,15 +30,28 @@ def init_db():
         )
     ''')
 
-    # Create list_items table to store the current list
+    # Create lists table
+    c.execute('''
+        CREATE TABLE lists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE
+        )
+    ''')
+
+    # Create list_items table to store items for multiple lists
     c.execute('''
         CREATE TABLE list_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            list_id INTEGER NOT NULL,
             part_id INTEGER NOT NULL,
             quantity INTEGER NOT NULL,
-            FOREIGN KEY (part_id) REFERENCES parts (id)
+            FOREIGN KEY (part_id) REFERENCES parts (id),
+            FOREIGN KEY (list_id) REFERENCES lists (id) ON DELETE CASCADE
         )
     ''')
+
+    # Seed a default list
+    c.execute("INSERT INTO lists (name) VALUES (?)", ['Default List'])
 
     # Create attachments table
     c.execute('''

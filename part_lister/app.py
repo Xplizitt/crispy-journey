@@ -2,7 +2,7 @@ import sqlite3
 import os
 import csv
 import io
-from flask import Flask, render_template, request, redirect, url_for, session, g, flash, Response, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, g, flash, Response, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 from PIL import Image
 
@@ -108,48 +108,43 @@ def admin():
 @app.route('/add_part', methods=['POST'])
 def add_part():
     if not session.get('logged_in'):
-        return redirect(url_for('login'))
+        return jsonify({'error': 'Not logged in'}), 401
 
-    if not request.form['barcode'] or not request.form['description']:
-        flash('Error: Barcode and Description are required.')
-        return redirect(url_for('admin'))
+    if 'barcode' not in request.form or 'description' not in request.form:
+        return jsonify({'error': 'Barcode and Description are required.'}), 400
 
     db = get_db()
-    thumbnail_path = None
     try:
         cur = db.execute('''
             INSERT INTO parts (barcode, description, part_number, uom, supplier_name, notes, thumbnail)
             VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            [request.form['barcode'], request.form['description'], request.form['part_number'],
-             request.form['uom'], request.form['supplier_name'], request.form['notes'], None])
+            [request.form.get('barcode'), request.form.get('description'), request.form.get('part_number'),
+             request.form.get('uom'), request.form.get('supplier_name'), request.form.get('notes'), None])
         db.commit()
         part_id = cur.lastrowid
-        flash('New part was successfully added')
     except sqlite3.IntegrityError:
-        flash('Error: Barcode already exists.')
-        return redirect(url_for('admin'))
+        return jsonify({'error': 'Barcode already exists.'}), 409
 
     # Handle file uploads
     files = request.files.getlist('attachments')
+    attachments_filenames = []
     for file in files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-
-            # Create thumbnail if it's an image
-            if file.mimetype.startswith('image/'):
-                thumb_filename = f"thumb_{part_id}_{filename}"
-                thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
-                if create_thumbnail(filepath, thumbnail_path):
-                    db.execute('UPDATE parts SET thumbnail = ? WHERE id = ?', [thumb_filename, part_id])
-
+            attachments_filenames.append(filename)
 
             db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
-                       (part_id, filename, filename)) # Store relative path
+                       (part_id, filename, filename))
             db.commit()
 
-    return redirect(url_for('admin'))
+    # Fetch the newly created part to return it
+    cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+    new_part = dict(cur.fetchone())
+    new_part['attachments'] = ','.join(attachments_filenames)
+
+    return jsonify(new_part)
 
 
 @app.route('/edit_part/<int:part_id>', methods=['GET', 'POST'])
@@ -186,15 +181,6 @@ def edit_part(part_id):
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
-
-                # Create thumbnail if it's an image and no thumbnail exists
-                cur = db.execute('SELECT thumbnail FROM parts WHERE id = ?', [part_id])
-                part = cur.fetchone()
-                if file.mimetype.startswith('image/') and not part['thumbnail']:
-                    thumb_filename = f"thumb_{part_id}_{filename}"
-                    thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
-                    if create_thumbnail(filepath, thumbnail_path):
-                        db.execute('UPDATE parts SET thumbnail = ? WHERE id = ?', [thumb_filename, part_id])
 
                 db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
                            (part_id, filename, filename))
@@ -313,7 +299,12 @@ def apply_thumbnail(filename):
 
     db.commit()
     flash(f'Successfully set thumbnail for {updated_count} part(s).')
-    return redirect(url_for('admin'))
+
+    # If we only updated one part, redirect back to its edit page.
+    if len(part_ids) == 1:
+        return redirect(url_for('edit_part', part_id=part_ids[0]))
+    else:
+        return redirect(url_for('admin'))
 
 
 @app.route('/select_thumbnail')
@@ -491,31 +482,108 @@ def import_parts():
 @app.route('/')
 def index():
     db = get_db()
+
+    # Ensure there's an active list in the session
+    if 'active_list_id' not in session:
+        # Find the first list (which is the default) and set it as active
+        cur = db.execute('SELECT id FROM lists ORDER BY id LIMIT 1')
+        first_list = cur.fetchone()
+        if first_list:
+            session['active_list_id'] = first_list['id']
+        else:
+            # Handle case where database might be empty
+            return "Error: No lists found in the database. Please initialize it.", 500
+
+    active_list_id = session['active_list_id']
+
+    # Get all lists for the dropdown switcher
+    cur = db.execute('SELECT * FROM lists ORDER BY name')
+    all_lists = cur.fetchall()
+
+    # Get the details of the active list
+    cur = db.execute('SELECT * FROM lists WHERE id = ?', [active_list_id])
+    active_list = cur.fetchone()
+
+    # Get items for the active list
     cur = db.execute('''
         SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
+        WHERE li.list_id = ?
         ORDER BY li.id
-    ''')
+    ''', [active_list_id])
     list_items = cur.fetchall()
+
     error = session.pop('error', None)
-    return render_template('index.html', list_items=list_items, error=error)
+    return render_template('index.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
 
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
-    barcode = request.form['barcode']
-    quantity = request.form.get('quantity', 1, type=int)
+    data = request.get_json()
+    barcode = data.get('barcode')
+    quantity = data.get('quantity', 1)
+    active_list_id = session.get('active_list_id')
+
+    if not active_list_id:
+        return jsonify({'error': 'No active list selected.'}), 400
     if not barcode:
-        session['error'] = 'Error: Barcode cannot be empty.'
-        return redirect(url_for('index'))
+        return jsonify({'error': 'Barcode cannot be empty.'}), 400
+
+    try:
+        quantity = int(quantity)
+    except (ValueError, TypeError):
+        quantity = 1
+
     db = get_db()
     cur = db.execute('SELECT * FROM parts WHERE barcode = ?', [barcode])
     part = cur.fetchone()
+
     if part:
-        db.execute('INSERT INTO list_items (part_id, quantity) VALUES (?, ?)', [part['id'], quantity])
-        db.commit()
+        try:
+            cur = db.execute('INSERT INTO list_items (list_id, part_id, quantity) VALUES (?, ?, ?)', [active_list_id, part['id'], quantity])
+            db.commit()
+            new_item_id = cur.lastrowid
+            # Fetch the newly created item to return it
+            cur = db.execute('''
+                SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
+                FROM list_items li
+                JOIN parts p ON li.part_id = p.id
+                WHERE li.id = ?
+            ''', [new_item_id])
+            new_item = cur.fetchone()
+            return jsonify(dict(new_item))
+        except sqlite3.Error as e:
+            return jsonify({'error': f'Database error: {e}'}), 500
     else:
-        session['error'] = 'Error: Barcode not found.'
+        return jsonify({'error': 'Barcode not found.'}), 404
+
+@app.route('/create_list', methods=['POST'])
+def create_list():
+    list_name = request.form.get('list_name')
+    if not list_name:
+        flash('List name cannot be empty.', 'error')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    try:
+        cur = db.execute('INSERT INTO lists (name) VALUES (?)', [list_name])
+        db.commit()
+        new_list_id = cur.lastrowid
+        session['active_list_id'] = new_list_id
+        flash(f"List '{list_name}' created successfully.", 'success')
+    except sqlite3.IntegrityError:
+        flash(f"A list with the name '{list_name}' already exists.", 'error')
+
+    return redirect(url_for('index'))
+
+@app.route('/switch_list/<int:list_id>')
+def switch_list(list_id):
+    db = get_db()
+    cur = db.execute('SELECT id FROM lists WHERE id = ?', [list_id])
+    if cur.fetchone():
+        session['active_list_id'] = list_id
+    else:
+        flash('List not found.', 'error')
     return redirect(url_for('index'))
 
 @app.route('/edit_list_item/<int:item_id>', methods=['GET', 'POST'])
