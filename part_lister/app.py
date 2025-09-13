@@ -213,6 +213,37 @@ def edit_part(part_id):
 
     return render_template('edit_part.html', part=part, attachments=attachments)
 
+@app.route('/set_thumbnail/<int:part_id>/<int:attachment_id>')
+def set_thumbnail(part_id, attachment_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    db = get_db()
+    cur = db.execute('SELECT filename FROM attachments WHERE id = ? AND part_id = ?', [attachment_id, part_id])
+    attachment = cur.fetchone()
+    if attachment:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], attachment['filename'])
+        thumb_filename = f"thumb_{part_id}_{attachment['filename']}"
+        thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
+        if create_thumbnail(filepath, thumbnail_path):
+            db.execute('UPDATE parts SET thumbnail = ? WHERE id = ?', [thumb_filename, part_id])
+            db.commit()
+            flash('Thumbnail updated successfully.')
+        else:
+            flash('Error creating thumbnail.')
+    else:
+        flash('Attachment not found.')
+    return redirect(url_for('edit_part', part_id=part_id))
+
+@app.route('/clear_thumbnail/<int:part_id>')
+def clear_thumbnail(part_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    db = get_db()
+    db.execute('UPDATE parts SET thumbnail = NULL WHERE id = ?', [part_id])
+    db.commit()
+    flash('Thumbnail cleared.')
+    return redirect(url_for('edit_part', part_id=part_id))
+
 @app.route('/delete_attachment/<int:attachment_id>')
 def delete_attachment(attachment_id):
     if not session.get('logged_in'):
@@ -246,6 +277,49 @@ def delete_attachment(attachment_id):
         flash('Attachment not found')
 
     return redirect(url_for('edit_part', part_id=attachment['part_id']))
+
+
+@app.route('/bulk_edit', methods=['POST'])
+def bulk_edit():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    part_ids = request.form.getlist('part_ids')
+    action = request.form.get('bulk_action')
+
+    if not part_ids:
+        flash('No parts selected for bulk action.')
+        return redirect(url_for('admin'))
+
+    if action == 'delete':
+        db = get_db()
+        for part_id in part_ids:
+            # This logic is duplicated from delete_part. Consider refactoring into a helper function.
+            cur = db.execute('SELECT * FROM attachments WHERE part_id = ?', [part_id])
+            attachments = cur.fetchall()
+            for att in attachments:
+                try:
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], att['filepath']))
+                except OSError as e:
+                    print(f"Error deleting file {att['filepath']}: {e}")
+
+            cur = db.execute('SELECT thumbnail FROM parts WHERE id = ?', [part_id])
+            part = cur.fetchone()
+            if part and part['thumbnail']:
+                try:
+                    os.remove(os.path.join(app.config['THUMBNAIL_FOLDER'], part['thumbnail']))
+                except OSError as e:
+                    print(f"Error deleting thumbnail {part['thumbnail']}: {e}")
+
+            db.execute('DELETE FROM attachments WHERE part_id = ?', [part_id])
+            db.execute('DELETE FROM parts WHERE id = ?', [part_id])
+
+        db.commit()
+        flash(f'Successfully deleted {len(part_ids)} parts.')
+    else:
+        flash('Invalid bulk action.')
+
+    return redirect(url_for('admin'))
 
 
 @app.route('/delete_part/<int:part_id>')

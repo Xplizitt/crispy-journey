@@ -82,10 +82,52 @@
         }
     }
 
+    function setupThemeSwitcher() {
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const dropdownItems = document.querySelectorAll('[data-theme]');
+        const body = document.body;
+
+        const setTheme = (theme) => {
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+            } else {
+                body.classList.remove('dark-theme');
+            }
+            localStorage.setItem('theme', theme);
+        };
+
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const theme = item.getAttribute('data-theme');
+                setTheme(theme);
+            });
+        });
+
+        // Apply saved theme on page load
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+    }
+
+    function setupBulkEdit() {
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const partCheckboxes = document.querySelectorAll('.part-checkbox');
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                partCheckboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+            });
+        }
+    }
+
     // Run on page load
     document.addEventListener('DOMContentLoaded', function() {
         setupTitleUpdates();
         setupThumbnailToggle();
+        setupThemeSwitcher();
+        setupBulkEdit();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {
