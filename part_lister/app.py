@@ -338,6 +338,62 @@ def bulk_thumbnail_action():
     return redirect(url_for('thumbnail_manager'))
 
 
+@app.route('/apply_thumbnail/<filename>')
+def apply_thumbnail(filename):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    part_ids_str = request.args.get('part_ids')
+    if not part_ids_str:
+        flash('No parts selected.')
+        return redirect(url_for('admin'))
+
+    part_ids = part_ids_str.split(',')
+    db = get_db()
+
+    # Check if the image exists as an attachment
+    cur = db.execute('SELECT id FROM attachments WHERE filename = ?', [filename])
+    attachment = cur.fetchone()
+    if not attachment:
+        flash('Selected image not found.')
+        return redirect(url_for('admin'))
+
+    # Create the thumbnail file
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    updated_count = 0
+    for part_id in part_ids:
+        thumb_filename = f"thumb_{part_id}_{filename}"
+        thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
+        if create_thumbnail(filepath, thumbnail_path):
+            db.execute('UPDATE parts SET thumbnail = ? WHERE id = ?', [thumb_filename, part_id])
+            updated_count += 1
+
+    db.commit()
+    flash(f'Successfully set thumbnail for {updated_count} part(s).')
+    return redirect(url_for('admin'))
+
+
+@app.route('/select_thumbnail')
+def select_thumbnail():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    part_ids = request.args.get('part_ids')
+    if not part_ids:
+        flash('No parts selected.')
+        return redirect(url_for('admin'))
+
+    db = get_db()
+    cur = db.execute('''
+        SELECT id, filename FROM attachments
+        WHERE filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif'
+        ORDER BY id DESC
+    ''')
+    images = cur.fetchall()
+    return render_template('select_thumbnail.html', images=images, part_ids=part_ids)
+
+
 @app.route('/bulk_edit', methods=['POST'])
 def bulk_edit():
     if not session.get('logged_in'):
@@ -375,6 +431,8 @@ def bulk_edit():
 
         db.commit()
         flash(f'Successfully deleted {len(part_ids)} parts.')
+    elif action == 'set_thumbnail':
+        return redirect(url_for('select_thumbnail', part_ids=','.join(part_ids)))
     else:
         flash('Invalid bulk action.')
 
@@ -387,16 +445,8 @@ def delete_part(part_id):
         return redirect(url_for('login'))
 
     db = get_db()
-    # First, delete associated attachments from filesystem
-    cur = db.execute('SELECT * FROM attachments WHERE part_id = ?', [part_id])
-    attachments = cur.fetchall()
-    for att in attachments:
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], att['filepath']))
-        except OSError as e:
-            print(f"Error deleting file {att['filepath']}: {e}") # Or flash a message
 
-    # Delete thumbnail
+    # Delete the part's thumbnail file (if it exists)
     cur = db.execute('SELECT thumbnail FROM parts WHERE id = ?', [part_id])
     part = cur.fetchone()
     if part and part['thumbnail']:
@@ -405,13 +455,13 @@ def delete_part(part_id):
         except OSError as e:
             print(f"Error deleting thumbnail {part['thumbnail']}: {e}")
 
+    # The attachments themselves are NOT deleted.
+    # The ON DELETE SET NULL constraint in the DB will set their part_id to NULL.
 
-    # Delete attachment records from DB
-    db.execute('DELETE FROM attachments WHERE part_id = ?', [part_id])
     # Delete the part itself
     db.execute('DELETE FROM parts WHERE id = ?', [part_id])
     db.commit()
-    flash('Part and all its attachments were successfully deleted')
+    flash('Part was successfully deleted. Its attachments are now in the global gallery.')
     return redirect(url_for('admin'))
 
 @app.route('/uploads/<filename>')
@@ -566,6 +616,72 @@ def delete_list_item(item_id):
     return redirect(url_for('index'))
 
 # --- Print Route ---
+@app.route('/delete_image/<int:image_id>')
+def delete_image(image_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    db = get_db()
+    cur = db.execute('SELECT filename FROM attachments WHERE id = ?', [image_id])
+    image = cur.fetchone()
+    if not image:
+        flash('Image not found.')
+        return redirect(url_for('gallery'))
+
+    # Check if this image is used as a thumbnail
+    thumb_filename_pattern = f"%thumb_%_{image['filename']}"
+    cur = db.execute('SELECT COUNT(*) as count FROM parts WHERE thumbnail LIKE ?', [thumb_filename_pattern])
+    usage = cur.fetchone()
+    if usage['count'] > 0:
+        flash(f"Cannot delete image. It is currently used as a thumbnail for {usage['count']} part(s). Please assign a different thumbnail to those parts first.")
+        return redirect(url_for('gallery'))
+
+    # Delete file from uploads folder
+    try:
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], image['filename']))
+    except OSError as e:
+        flash(f"Error deleting file from filesystem: {e}")
+
+    # Delete record from database
+    db.execute('DELETE FROM attachments WHERE id = ?', [image_id])
+    db.commit()
+    flash(f"Image '{image['filename']}' deleted successfully.")
+    return redirect(url_for('gallery'))
+
+
+@app.route('/gallery', methods=['GET', 'POST'])
+def gallery():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    db = get_db()
+
+    if request.method == 'POST':
+        if 'files' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        files = request.files.getlist('files')
+        for file in files:
+            if file.filename == '':
+                continue
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
+                           (None, filename, filename))
+        db.commit()
+        flash(f'Successfully uploaded {len(files)} files.')
+        return redirect(url_for('gallery'))
+
+    cur = db.execute('''
+        SELECT id, filename FROM attachments
+        WHERE filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif'
+        ORDER BY id DESC
+    ''')
+    images = cur.fetchall()
+    return render_template('gallery.html', images=images)
+
+
 @app.route('/thumbnail_manager')
 def thumbnail_manager():
     if not session.get('logged_in'):
