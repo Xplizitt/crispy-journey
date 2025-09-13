@@ -1,1 +1,10 @@
 /* Custom styles for Part Lister */
+
+.attachment-item.active {
+    border-color: var(--bs-primary);
+    border-width: 2px;
+}
+
+.attachment-item.active .btn-success {
+    display: none;
+}

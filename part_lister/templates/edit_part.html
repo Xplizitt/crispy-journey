@@ -41,40 +41,37 @@
             </form>
         </div>
         <div class="col-md-4">
-            <h2>Current Thumbnail</h2>
+            <h2>Attachments</h2>
             {% if part.thumbnail %}
-                <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" class="img-fluid rounded">
-            {% else %}
-                <p>No thumbnail.</p>
-            {% endif %}
-
-            <h2 class="mt-4">Manage Attachments</h2>
-            {% if part.thumbnail %}
-            <div class="mb-3">
-                <a href="{{ url_for('clear_thumbnail', part_id=part.id) }}" class="btn btn-sm btn-outline-warning">Clear Thumbnail</a>
+            <div class="mb-2">
+                <a href="{{ url_for('clear_thumbnail', part_id=part.id) }}" class="btn btn-sm btn-outline-warning w-100">Clear Thumbnail</a>
             </div>
             {% endif %}
-            <ul class="list-group">
-                {% for attachment in attachments %}
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank">{{ attachment.filename }}</a>
-                            <div>
-                                {% set ext = attachment.filename.split('.')[-1].lower() %}
-                                {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
-                                    <a href="{{ url_for('set_thumbnail', part_id=part.id, attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-success">Set as Thumbnail</a>
-                                {% endif %}
-                                <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this attachment?');">Delete</a>
-                            </div>
+
+            <div class="list-group">
+            {% for attachment in attachments %}
+                {% set ext = attachment.filename.split('.')[-1].lower() %}
+                {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
+                    {% set is_thumbnail = part.thumbnail and attachment.filename in part.thumbnail %}
+                    <div class="list-group-item attachment-item {{ 'active' if is_thumbnail }}">
+                        <img src="{{ url_for('uploaded_file', filename=attachment.filename) }}" alt="{{ attachment.filename }}" class="img-fluid rounded mb-2">
+                        <div class="d-grid gap-2">
+                             {% if not is_thumbnail %}
+                            <a href="{{ url_for('set_thumbnail', part_id=part.id, attachment_id=attachment.id) }}" class="btn btn-sm btn-success">Set as Thumbnail</a>
+                             {% endif %}
+                            <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this attachment?');">Delete</a>
                         </div>
-                         {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
-                            <img src="{{ url_for('uploaded_file', filename=attachment.filename) }}" alt="{{ attachment.filename }}" class="img-fluid rounded mt-2" style="max-height: 100px;">
-                        {% endif %}
-                    </li>
+                    </div>
                 {% else %}
-                    <li class="list-group-item">No attachments.</li>
-                {% endfor %}
-            </ul>
+                     <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        {{ attachment.filename }}
+                        <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this attachment?');"><i class="bi bi-trash"></i></a>
+                    </a>
+                {% endif %}
+            {% else %}
+                <div class="list-group-item">No attachments.</div>
+            {% endfor %}
+            </div>
         </div>
     </div>
 {% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Thumbnail Manager{% endblock %}
+
+{% block content %}
+<form action="{{ url_for('bulk_thumbnail_action') }}" method="post">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1>Thumbnail Manager</h1>
+        <div>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">Back to Admin</a>
+        </div>
+    </div>
+
+    <hr>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <input type="checkbox" id="select-all-checkbox" class="form-check-input me-2">
+            <label for="select-all-checkbox">Select All</label>
+        </div>
+        <div class="d-flex">
+            <select name="bulk_action" class="form-select me-2" style="width: auto;">
+                <option value="">Bulk Actions...</option>
+                <option value="clear">Clear Selected Thumbnails</option>
+                <option value="regenerate">Regenerate Selected Thumbnails</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Go</button>
+        </div>
+    </div>
+
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for part in parts %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">{{ part.description }}</h5>
+                            <p class="card-text small">Part ID: {{ part.id }}</p>
+                        </div>
+                        <input type="checkbox" name="part_ids" value="{{ part.id }}" class="form-check-input part-checkbox">
+                    </div>
+                </div>
+                <div class="card-body">
+                <h6>Current Thumbnail:</h6>
+                {% if part.thumbnail %}
+                    <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Current Thumbnail" class="img-fluid rounded mb-3" style="max-height: 150px;">
+                    <a href="{{ url_for('clear_thumbnail', part_id=part.id) }}" class="btn btn-sm btn-warning mb-3">Clear Thumbnail</a>
+                {% else %}
+                    <p class="text-muted">No thumbnail set.</p>
+                {% endif %}
+
+                <h6>Available Images:</h6>
+                <div class="row row-cols-2 g-2">
+                    {% for image in part.images.split(',') %}
+                    <div class="col">
+                        <div class="thumbnail-option position-relative">
+                            <img src="{{ url_for('uploaded_file', filename=image) }}" alt="Image option" class="img-fluid rounded">
+                            <div class="position-absolute bottom-0 end-0 p-1">
+                                <a href="{{ url_for('set_thumbnail_from_filename', part_id=part.id, filename=image) }}" class="btn btn-sm btn-success stretched-link">Set</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col">
+        <p>No parts with image attachments found.</p>
+    </div>
+    {% endfor %}
+</div>
+
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+.thumbnail-option .btn {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.thumbnail-option:hover .btn {
+    opacity: 1;
+}
+</style>
+{% endblock %}
