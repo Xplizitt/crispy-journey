@@ -19,7 +19,7 @@ A simple web application for building part lists, designed to be compatible with
 
 1.  **Install Dependencies:**
     ```bash
-    pip install Flask
+    pip install -r requirements.txt
     ```
 
 2.  **Initialize the Database:**
@@ -56,3 +56,22 @@ The application will be available at `http://0.0.0.0:5000/`.
 4.  The scanner should be configured to press "Enter" after the quantity, which will submit the form.
 5.  The page will reload with the new item in the list.
 6.  When the list is complete, click "Print List" to open the print view.
+
+## Testing
+
+This project uses `pytest` for backend testing and `pytest-playwright` for end-to-end browser testing.
+
+1.  **Install Test Dependencies:**
+    The test dependencies are included in `requirements.txt`.
+
+2.  **Install Playwright Browsers:**
+    The first time you run the E2E tests, you need to install the necessary browser binaries.
+    ```bash
+    playwright install
+    ```
+
+3.  **Run the Test Suite:**
+    To run all tests, execute the following command from the root directory:
+    ```bash
+    PYTHONPATH=. pytest
+    ```
