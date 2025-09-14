@@ -254,6 +254,52 @@
         });
     }
 
+    function renderListTable(items) {
+        const tableBody = document.querySelector('.table tbody');
+        if (!tableBody) return;
+
+        // Clear existing rows
+        tableBody.innerHTML = '';
+
+        if (items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7">No items in list.</td></tr>';
+            return;
+        }
+
+        items.forEach(item => {
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td class="thumbnail-col">${item.thumbnail ? `<img src="/thumbnails/${item.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
+                <td>${item.barcode}</td>
+                <td>${item.description}</td>
+                <td>${item.uom || ''}</td>
+                <td>${item.supplier_name || ''}</td>
+                <td>${item.quantity}</td>
+                <td>
+                    <a href="/edit_list_item/${item.id}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <a href="/delete_list_item/${item.id}" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            `;
+            tableBody.appendChild(newRow);
+        });
+    }
+
+    function setupListPolling() {
+        const tableBody = document.querySelector('.table tbody');
+        if (!tableBody || !tableBody.dataset.activeListId) return;
+
+        const activeListId = tableBody.dataset.activeListId;
+
+        setInterval(() => {
+            fetch(`/api/lists/${activeListId}/items`)
+                .then(response => response.json())
+                .then(data => {
+                    renderListTable(data);
+                })
+                .catch(error => console.error('Polling error:', error));
+        }, 5000); // Poll every 5 seconds
+    }
+
     // Run on page load
     document.addEventListener('DOMContentLoaded', function() {
         setupTitleUpdates();
@@ -262,6 +308,7 @@
         setupBulkEdit();
         setupAjaxAddToList();
         setupAjaxAddPart();
+        setupListPolling();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {

@@ -586,6 +586,19 @@ def switch_list(list_id):
         flash('List not found.', 'error')
     return redirect(url_for('index'))
 
+@app.route('/api/lists/<int:list_id>/items')
+def api_get_list_items(list_id):
+    db = get_db()
+    cur = db.execute('''
+        SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        FROM list_items li
+        JOIN parts p ON li.part_id = p.id
+        WHERE li.list_id = ?
+        ORDER BY li.id
+    ''', [list_id])
+    items = [dict(row) for row in cur.fetchall()]
+    return jsonify(items)
+
 @app.route('/edit_list_item/<int:item_id>', methods=['GET', 'POST'])
 def edit_list_item(item_id):
     db = get_db()
