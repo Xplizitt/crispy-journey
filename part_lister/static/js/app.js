@@ -154,7 +154,7 @@
                 } else {
                     // Add new item to the table
                     const tableBody = document.querySelector('.table tbody');
-                    const noItemsRow = tableBody.querySelector('td[colspan="7"]');
+                    const noItemsRow = tableBody.querySelector('td[colspan="8"]');
                     if (noItemsRow) {
                         noItemsRow.parentElement.remove();
                     }
@@ -164,6 +164,7 @@
                         <td class="thumbnail-col">${data.thumbnail ? `<img src="/thumbnails/${data.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
                         <td>${data.barcode}</td>
                         <td>${data.description}</td>
+                        <td><a href="/part/${data.part_id}">${data.part_number}</a></td>
                         <td>${data.uom}</td>
                         <td>${data.supplier_name}</td>
                         <td>${data.quantity}</td>
@@ -262,7 +263,7 @@
         tableBody.innerHTML = '';
 
         if (items.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7">No items in list.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8">No items in list.</td></tr>';
             return;
         }
 
@@ -272,6 +273,7 @@
                 <td class="thumbnail-col">${item.thumbnail ? `<img src="/thumbnails/${item.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
                 <td>${item.barcode}</td>
                 <td>${item.description}</td>
+                <td><a href="/part/${item.part_id}">${item.part_number}</a></td>
                 <td>${item.uom || ''}</td>
                 <td>${item.supplier_name || ''}</td>
                 <td>${item.quantity}</td>
@@ -301,6 +303,19 @@
     }
 
     // Run on page load
+    function setupImageModal() {
+        const imageModal = document.getElementById('imageModal');
+        if (imageModal) {
+            imageModal.addEventListener('show.bs.modal', function (event) {
+                const link = event.relatedTarget;
+                const imageSrc = link.getAttribute('data-image-src');
+                const modalImage = imageModal.querySelector('#modalImage');
+                modalImage.src = imageSrc;
+            });
+        }
+    }
+
+    // Run on page load
     document.addEventListener('DOMContentLoaded', function() {
         setupTitleUpdates();
         setupThumbnailToggle();
@@ -309,6 +324,7 @@
         setupAjaxAddToList();
         setupAjaxAddPart();
         setupListPolling();
+        setupImageModal();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {
