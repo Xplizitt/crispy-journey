@@ -25,15 +25,12 @@
             <input type="text" name="list_name" placeholder="New list name...">
             <input type="submit" value="Create List">
         </form>
-        <form action="" method="get" style="display: inline;">
-             <select name="switch_to_list" onchange="this.form.submit()">
-                {% for list in all_lists %}
-                    <option value="{{ list.id }}" {% if list.id == active_list.id %}selected{% endif %}>{{ list.name }}</option>
-                {% endfor %}
-            </select>
-        </form>
+        <select name="switch_to_list" onchange="window.location.href = '/switch_list/' + this.value;">
+            {% for list in all_lists %}
+                <option value="{{ list.id }}" {% if list.id == active_list.id %}selected{% endif %}>{{ list.name }}</option>
+            {% endfor %}
+        </select>
     </div>
-
 
     <hr>
 
@@ -45,9 +42,18 @@
         <label for="barcode">Barcode:</label><br>
         <input type="text" name="barcode" id="barcode"><br><br>
         <label for="quantity">Quantity:</label><br>
-        <input type="text" name="quantity" id="quantity" value="1"><br><br>
+        <input type="text" name="quantity" id="quantity" placeholder="Quantity"><br><br>
         <input type="submit" value="Add Item">
     </form>
+
+    <script>
+        document.getElementById('barcode').addEventListener('keydown', function(event) {
+            if (event.keyCode === 13) {
+                event.preventDefault();
+                document.getElementById('quantity').focus();
+            }
+        });
+    </script>
 
     <hr>
 
@@ -79,15 +85,6 @@
             {% endfor %}
         </tbody>
     </table>
-
-    <script>
-        // Handle list switching
-        document.querySelector('select[name="switch_to_list"]').form.onsubmit = function() {
-            var selectedListId = document.querySelector('select[name="switch_to_list"]').value;
-            window.location.href = '/switch_list/' + selectedListId;
-            return false;
-        };
-    </script>
 
 </body>
 </html>

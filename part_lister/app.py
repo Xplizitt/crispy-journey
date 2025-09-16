@@ -583,15 +583,24 @@ def scanner():
 
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
-    data = request.get_json()
-    barcode = data.get('barcode')
-    quantity = data.get('quantity', 1)
+    if request.is_json:
+        data = request.get_json()
+        barcode = data.get('barcode')
+        quantity = data.get('quantity', 1)
+    else:
+        barcode = request.form.get('barcode')
+        quantity = request.form.get('quantity', 1)
+
     active_list_id = session.get('active_list_id')
 
     if not active_list_id:
         return jsonify({'error': 'No active list selected.'}), 400
     if not barcode:
-        return jsonify({'error': 'Barcode cannot be empty.'}), 400
+        if request.is_json:
+            return jsonify({'error': 'Barcode cannot be empty.'}), 400
+        else:
+            flash('Barcode cannot be empty.')
+            return redirect(request.referrer or url_for('index'))
 
     try:
         quantity = int(quantity)
@@ -606,20 +615,30 @@ def add_to_list():
         try:
             cur = db.execute('INSERT INTO list_items (list_id, part_id, quantity) VALUES (?, ?, ?)', [active_list_id, part['id'], quantity])
             db.commit()
-            new_item_id = cur.lastrowid
-            # Fetch the newly created item to return it
-            cur = db.execute('''
-                SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
-                FROM list_items li
-                JOIN parts p ON li.part_id = p.id
-                WHERE li.id = ?
-            ''', [new_item_id])
-            new_item = cur.fetchone()
-            return jsonify(dict(new_item))
+            if request.is_json:
+                new_item_id = cur.lastrowid
+                cur = db.execute('''
+                    SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
+                    FROM list_items li
+                    JOIN parts p ON li.part_id = p.id
+                    WHERE li.id = ?
+                ''', [new_item_id])
+                new_item = cur.fetchone()
+                return jsonify(dict(new_item))
+            else:
+                return redirect(request.referrer or url_for('index'))
         except sqlite3.Error as e:
-            return jsonify({'error': f'Database error: {e}'}), 500
+            if request.is_json:
+                return jsonify({'error': f'Database error: {e}'}), 500
+            else:
+                flash(f'Database error: {e}')
+                return redirect(request.referrer or url_for('index'))
     else:
-        return jsonify({'error': 'Barcode not found.'}), 404
+        if request.is_json:
+            return jsonify({'error': 'Barcode not found.'}), 404
+        else:
+            session['error'] = 'Barcode not found.'
+            return redirect(request.referrer or url_for('index'))
 
 @app.route('/create_list', methods=['POST'])
 def create_list():
@@ -648,6 +667,11 @@ def switch_list(list_id):
         session['active_list_id'] = list_id
     else:
         flash('List not found.', 'error')
+
+    # Redirect back to the referrer, defaulting to index
+    referrer = request.referrer
+    if referrer and 'scanner' in referrer:
+        return redirect(url_for('scanner'))
     return redirect(url_for('index'))
 
 @app.route('/api/lists/<int:list_id>/items')
