@@ -5,11 +5,13 @@
 {% block content %}
     <h1>Part List</h1>
 
+    <div id="alert-container">
     {% if error %}
         <div class="alert alert-danger" role="alert">
             {{ error }}
         </div>
     {% endif %}
+    </div>
 
     <form action="{{ url_for('add_to_list') }}" method="post" id="add-item-form" class="row g-3 align-items-center mb-3">
         <div class="col-auto">
@@ -28,8 +30,32 @@
     <hr>
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Current List</h2>
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="listSwitcher" data-bs-toggle="dropdown" aria-expanded="false">
+                Current List: <strong>{{ active_list.name }}</strong>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="listSwitcher">
+                {% for list in all_lists %}
+                <li><a class="dropdown-item {% if list.id == active_list.id %}active{% endif %}" href="{{ url_for('switch_list', list_id=list.id) }}">{{ list.name }}</a></li>
+                {% endfor %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="collapse" data-bs-target="#create-list-collapse">Create New List...</a></li>
+            </ul>
+        </div>
         <button id="toggle-thumbnails-btn" class="btn btn-secondary">Toggle Thumbnails</button>
+    </div>
+
+    <div class="collapse mb-3" id="create-list-collapse">
+        <div class="card card-body">
+            <form action="{{ url_for('create_list') }}" method="post" class="row g-3">
+                <div class="col-auto">
+                    <input type="text" class="form-control" name="list_name" placeholder="New list name...">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="table-responsive">
@@ -45,7 +71,7 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody data-active-list-id="{{ active_list.id }}">
                 {% for item in list_items %}
                 <tr>
                     <td class="thumbnail-col">

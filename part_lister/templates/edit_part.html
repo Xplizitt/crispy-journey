@@ -42,6 +42,9 @@
         </div>
         <div class="col-md-4">
             <h2>Attachments</h2>
+            <div class="d-grid gap-2 mb-2">
+                <a href="{{ url_for('select_thumbnail', part_ids=part.id) }}" class="btn btn-sm btn-info">Choose from Gallery</a>
+            </div>
             {% if part.thumbnail %}
             <div class="mb-2">
                 <a href="{{ url_for('clear_thumbnail', part_id=part.id) }}" class="btn btn-sm btn-outline-warning w-100">Clear Thumbnail</a>
