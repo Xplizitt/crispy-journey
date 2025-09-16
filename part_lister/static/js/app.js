@@ -1,3 +1,28 @@
+/*
+ * Part Lister - Main JavaScript file for the primary user interface.
+ *
+ * Project Overview:
+ * This application allows users to manage a database of parts and create pick lists.
+ * This file contains the JavaScript for the main, modern interface, which uses Bootstrap 5.
+ * It is NOT used by the simplified scanner interface.
+ *
+ * Core Technologies:
+ * - Backend: Flask (Python)
+ * - Database: SQLite
+ * - Frontend (Main Interface): Bootstrap 5, Jinja2 templates
+ *
+ * Key Features Handled by this File:
+ * - AJAX for adding parts and list items without a full page reload.
+ * - Dynamic updates to the UI (e.g., toggling thumbnails, theme switching).
+ * - Handling for the image gallery modal on the Part View page.
+ * - Automatic polling for list updates on the main list page.
+ *
+ * Notes for Future Agents:
+# - Please update this header comment with any major changes or new requirements.
+ * - This file is for the main interface only. Do not add code here that is intended for the scanner interface.
+ * - The scanner interface (`scanner.html`) contains its own, simplified JavaScript.
+ * - The code uses modern JavaScript features that are not compatible with old browsers like IE on Windows CE.
+ */
 (function() {
     var originalTitle = document.title;
 

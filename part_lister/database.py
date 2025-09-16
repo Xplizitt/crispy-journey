@@ -1,3 +1,19 @@
+# Part Lister - Database Initialization Script
+#
+# Project Overview:
+# This script initializes the SQLite database for the Part Lister application.
+# It defines the schema for the application's tables, including parts, lists, list_items, and attachments.
+# Running this script directly will delete the existing database (if any) and create a new, empty one with the correct schema.
+#
+# Core Technologies:
+# - Backend: Flask (Python)
+# - Database: SQLite
+#
+# Notes for Future Agents:
+# - Please update this header comment with any major changes or new requirements.
+# - Be cautious when running this script, as it will delete all existing data.
+# - If you need to modify the database schema, make the changes in this file and then run it to re-initialize the database.
+
 import sqlite3
 import os
 

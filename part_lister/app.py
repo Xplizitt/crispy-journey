@@ -1,3 +1,30 @@
+# Part Lister - A Flask-based application for managing parts and creating pick lists.
+#
+# Project Overview:
+# This application allows users to manage a database of parts, including their details and attachments (images, DXF files, etc.).
+# It provides a main interface for managing parts and a simplified interface for use on older devices like Windows CE scanners.
+# Users can also create and manage pick lists of parts.
+#
+# Core Technologies:
+# - Backend: Flask (Python)
+# - Database: SQLite
+# - Frontend (Main Interface): Bootstrap 5, Jinja2 templates
+# - Frontend (Scanner Interface): Basic HTML and JavaScript for compatibility with older browsers (e.g., Internet Explorer on Windows CE 6.0).
+#
+# Key Features & Recent Changes (as of 2025-09-16):
+# - Part Management: Add, edit, delete parts.
+# - Part View: A detailed view for each part, with a photo gallery and a list of file attachments.
+# - Scanner Interface: A simplified interface at `/scanner` for adding items to lists on devices with old browsers.
+# - File Attachments: Supports various file types, including images and DXF files.
+# - Thumbnail Support: Parts can have a thumbnail image.
+#
+# Notes for Future Agents:
+# - Please update this header comment with any major changes or new requirements.
+# - The application has two distinct user interfaces: the main one (using Bootstrap 5) and the scanner one (using basic HTML).
+# - When making changes, consider the compatibility requirements for the scanner interface. Avoid using modern JavaScript/CSS features in `scanner.html` and related templates.
+# - The `add_to_list` route has been modified to accept both JSON and form-urlencoded data to support both interfaces.
+# - The `switch_list` route has been modified to redirect back to the referrer to support list switching from both interfaces.
+
 import sqlite3
 import os
 import csv
@@ -587,9 +614,11 @@ def add_to_list():
         data = request.get_json()
         barcode = data.get('barcode')
         quantity = data.get('quantity', 1)
+        add_as_separate = data.get('add_as_separate', False)
     else:
         barcode = request.form.get('barcode')
         quantity = request.form.get('quantity', 1)
+        add_as_separate = request.form.get('add_as_separate') == 'on'
 
     active_list_id = session.get('active_list_id')
 
@@ -613,6 +642,22 @@ def add_to_list():
 
     if part:
         try:
+            if not add_as_separate:
+                # Check if the part already exists in the list
+                cur = db.execute('SELECT id, quantity FROM list_items WHERE list_id = ? AND part_id = ?', [active_list_id, part['id']])
+                existing_item = cur.fetchone()
+                if existing_item:
+                    new_quantity = existing_item['quantity'] + quantity
+                    db.execute('UPDATE list_items SET quantity = ? WHERE id = ?', [new_quantity, existing_item['id']])
+                    db.commit()
+                    # After updating, we can just return a success message or redirect
+                    if request.is_json:
+                        # For AJAX requests, we might need to return the updated list or item
+                        return jsonify({'success': True, 'message': 'Quantity updated.'})
+                    else:
+                        return redirect(request.referrer or url_for('index'))
+
+            # If we are adding as a separate line, or if it's a new item
             cur = db.execute('INSERT INTO list_items (list_id, part_id, quantity) VALUES (?, ?, ?)', [active_list_id, part['id'], quantity])
             db.commit()
             if request.is_json:
