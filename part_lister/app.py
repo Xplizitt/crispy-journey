@@ -1,3 +1,30 @@
+# Part Lister - A Flask-based application for managing parts and creating pick lists.
+#
+# Project Overview:
+# This application allows users to manage a database of parts, including their details and attachments (images, DXF files, etc.).
+# It provides a main interface for managing parts and a simplified interface for use on older devices like Windows CE scanners.
+# Users can also create and manage pick lists of parts.
+#
+# Core Technologies:
+# - Backend: Flask (Python)
+# - Database: SQLite
+# - Frontend (Main Interface): Bootstrap 5, Jinja2 templates
+# - Frontend (Scanner Interface): Basic HTML and JavaScript for compatibility with older browsers (e.g., Internet Explorer on Windows CE 6.0).
+#
+# Key Features & Recent Changes (as of 2025-09-16):
+# - Part Management: Add, edit, delete parts.
+# - Part View: A detailed view for each part, with a photo gallery and a list of file attachments.
+# - Scanner Interface: A simplified interface at `/scanner` for adding items to lists on devices with old browsers.
+# - File Attachments: Supports various file types, including images and DXF files.
+# - Thumbnail Support: Parts can have a thumbnail image.
+#
+# Notes for Future Agents:
+# - Please update this header comment with any major changes or new requirements.
+# - The application has two distinct user interfaces: the main one (using Bootstrap 5) and the scanner one (using basic HTML).
+# - When making changes, consider the compatibility requirements for the scanner interface. Avoid using modern JavaScript/CSS features in `scanner.html` and related templates.
+# - The `add_to_list` route has been modified to accept both JSON and form-urlencoded data to support both interfaces.
+# - The `switch_list` route has been modified to redirect back to the referrer to support list switching from both interfaces.
+
 import sqlite3
 import os
 import csv
@@ -13,7 +40,7 @@ _basedir = os.path.abspath(os.path.dirname(__file__))
 DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
 UPLOAD_FOLDER = os.path.join(_basedir, 'static', 'uploads')
 THUMBNAIL_FOLDER = os.path.join(_basedir, 'static', 'thumbnails')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'zip', 'rar', '7z', 'cad'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'zip', 'rar', '7z', 'cad', 'dxf'}
 
 app.config['DATABASE'] = DATABASE_PATH
 app.config['SECRET_KEY'] = 'dev'
@@ -199,6 +226,31 @@ def edit_part(part_id):
 
     return render_template('edit_part.html', part=part, attachments=attachments)
 
+@app.route('/part/<int:part_id>')
+def part_view(part_id):
+    origin = request.args.get('origin', 'admin')
+    db = get_db()
+    cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+    part = cur.fetchone()
+    if part is None:
+        flash('Part not found!')
+        return redirect(url_for('admin'))
+
+    cur = db.execute('SELECT * FROM attachments WHERE part_id = ?', [part_id])
+    attachments = cur.fetchall()
+
+    image_attachments = []
+    file_attachments = []
+    image_extensions = ['.png', '.jpg', '.jpeg', '.gif']
+
+    for attachment in attachments:
+        if any(attachment['filename'].lower().endswith(ext) for ext in image_extensions):
+            image_attachments.append(attachment)
+        else:
+            file_attachments.append(attachment)
+
+    return render_template('part_view.html', part=part, image_attachments=image_attachments, file_attachments=file_attachments, origin=origin)
+
 @app.route('/set_thumbnail/<int:part_id>/<int:attachment_id>')
 def set_thumbnail(part_id, attachment_id):
     if not session.get('logged_in'):
@@ -320,7 +372,8 @@ def select_thumbnail():
     db = get_db()
     cur = db.execute('''
         SELECT id, filename FROM attachments
-        WHERE filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif'
+        WHERE (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif')
+        AND filename NOT LIKE '%.dxf'
         ORDER BY id DESC
     ''')
     images = cur.fetchall()
@@ -506,7 +559,7 @@ def index():
 
     # Get items for the active list
     cur = db.execute('''
-        SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         WHERE li.list_id = ?
@@ -517,17 +570,66 @@ def index():
     error = session.pop('error', None)
     return render_template('index.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
 
+@app.route('/scanner')
+def scanner():
+    db = get_db()
+
+    # Ensure there's an active list in the session
+    if 'active_list_id' not in session:
+        # Find the first list (which is the default) and set it as active
+        cur = db.execute('SELECT id FROM lists ORDER BY id LIMIT 1')
+        first_list = cur.fetchone()
+        if first_list:
+            session['active_list_id'] = first_list['id']
+        else:
+            # Handle case where database might be empty
+            return "Error: No lists found in the database. Please initialize it.", 500
+
+    active_list_id = session['active_list_id']
+
+    # Get all lists for the dropdown switcher
+    cur = db.execute('SELECT * FROM lists ORDER BY name')
+    all_lists = cur.fetchall()
+
+    # Get the details of the active list
+    cur = db.execute('SELECT * FROM lists WHERE id = ?', [active_list_id])
+    active_list = cur.fetchone()
+
+    # Get items for the active list
+    cur = db.execute('''
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        FROM list_items li
+        JOIN parts p ON li.part_id = p.id
+        WHERE li.list_id = ?
+        ORDER BY li.id
+    ''', [active_list_id])
+    list_items = cur.fetchall()
+
+    error = session.pop('error', None)
+    return render_template('scanner.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
+
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
-    data = request.get_json()
-    barcode = data.get('barcode')
-    quantity = data.get('quantity', 1)
+    if request.is_json:
+        data = request.get_json()
+        barcode = data.get('barcode')
+        quantity = data.get('quantity', 1)
+        add_as_separate = data.get('add_as_separate', False)
+    else:
+        barcode = request.form.get('barcode')
+        quantity = request.form.get('quantity', 1)
+        add_as_separate = request.form.get('add_as_separate') == 'on'
+
     active_list_id = session.get('active_list_id')
 
     if not active_list_id:
         return jsonify({'error': 'No active list selected.'}), 400
     if not barcode:
-        return jsonify({'error': 'Barcode cannot be empty.'}), 400
+        if request.is_json:
+            return jsonify({'error': 'Barcode cannot be empty.'}), 400
+        else:
+            flash('Barcode cannot be empty.')
+            return redirect(request.referrer or url_for('index'))
 
     try:
         quantity = int(quantity)
@@ -540,22 +642,48 @@ def add_to_list():
 
     if part:
         try:
+            if not add_as_separate:
+                # Check if the part already exists in the list
+                cur = db.execute('SELECT id, quantity FROM list_items WHERE list_id = ? AND part_id = ?', [active_list_id, part['id']])
+                existing_item = cur.fetchone()
+                if existing_item:
+                    new_quantity = existing_item['quantity'] + quantity
+                    db.execute('UPDATE list_items SET quantity = ? WHERE id = ?', [new_quantity, existing_item['id']])
+                    db.commit()
+                    # After updating, we can just return a success message or redirect
+                    if request.is_json:
+                        # For AJAX requests, we might need to return the updated list or item
+                        return jsonify({'success': True, 'message': 'Quantity updated.'})
+                    else:
+                        return redirect(request.referrer or url_for('index'))
+
+            # If we are adding as a separate line, or if it's a new item
             cur = db.execute('INSERT INTO list_items (list_id, part_id, quantity) VALUES (?, ?, ?)', [active_list_id, part['id'], quantity])
             db.commit()
-            new_item_id = cur.lastrowid
-            # Fetch the newly created item to return it
-            cur = db.execute('''
-                SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
-                FROM list_items li
-                JOIN parts p ON li.part_id = p.id
-                WHERE li.id = ?
-            ''', [new_item_id])
-            new_item = cur.fetchone()
-            return jsonify(dict(new_item))
+            if request.is_json:
+                new_item_id = cur.lastrowid
+                cur = db.execute('''
+                    SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
+                    FROM list_items li
+                    JOIN parts p ON li.part_id = p.id
+                    WHERE li.id = ?
+                ''', [new_item_id])
+                new_item = cur.fetchone()
+                return jsonify(dict(new_item))
+            else:
+                return redirect(request.referrer or url_for('index'))
         except sqlite3.Error as e:
-            return jsonify({'error': f'Database error: {e}'}), 500
+            if request.is_json:
+                return jsonify({'error': f'Database error: {e}'}), 500
+            else:
+                flash(f'Database error: {e}')
+                return redirect(request.referrer or url_for('index'))
     else:
-        return jsonify({'error': 'Barcode not found.'}), 404
+        if request.is_json:
+            return jsonify({'error': 'Barcode not found.'}), 404
+        else:
+            session['error'] = 'Barcode not found.'
+            return redirect(request.referrer or url_for('index'))
 
 @app.route('/create_list', methods=['POST'])
 def create_list():
@@ -584,13 +712,18 @@ def switch_list(list_id):
         session['active_list_id'] = list_id
     else:
         flash('List not found.', 'error')
+
+    # Redirect back to the referrer, defaulting to index
+    referrer = request.referrer
+    if referrer and 'scanner' in referrer:
+        return redirect(url_for('scanner'))
     return redirect(url_for('index'))
 
 @app.route('/api/lists/<int:list_id>/items')
 def api_get_list_items(list_id):
     db = get_db()
     cur = db.execute('''
-        SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         WHERE li.list_id = ?
@@ -601,12 +734,17 @@ def api_get_list_items(list_id):
 
 @app.route('/edit_list_item/<int:item_id>', methods=['GET', 'POST'])
 def edit_list_item(item_id):
+    origin = request.args.get('origin', 'index')
     db = get_db()
+
     if request.method == 'POST':
         quantity = request.form.get('quantity', 1, type=int)
         db.execute('UPDATE list_items SET quantity = ? WHERE id = ?', [quantity, item_id])
         db.commit()
+        if origin == 'scanner':
+            return redirect(url_for('scanner'))
         return redirect(url_for('index'))
+
     cur = db.execute('''
         SELECT li.id, p.barcode, p.description, li.quantity
         FROM list_items li
@@ -614,9 +752,15 @@ def edit_list_item(item_id):
         WHERE li.id = ?
     ''', [item_id])
     item = cur.fetchone()
+
     if item is None:
         session['error'] = 'List item not found!'
+        if origin == 'scanner':
+            return redirect(url_for('scanner'))
         return redirect(url_for('index'))
+
+    if origin == 'scanner':
+        return render_template('edit_list_item_scanner.html', item=item)
     return render_template('edit_list_item.html', item=item)
 
 @app.route('/delete_list_item/<int:item_id>')

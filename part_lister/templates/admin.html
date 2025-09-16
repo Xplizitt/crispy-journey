@@ -152,15 +152,15 @@
                         </td>
                         <td>{{ part['barcode'] }}</td>
                         <td>{{ part['description'] }}</td>
-                        <td>{{ part['part_number'] }}</td>
+                        <td><a href="{{ url_for('part_view', part_id=part.id, origin='admin') }}">{{ part['part_number'] }}</a></td>
                         <td>{{ part['uom'] }}</td>
                         <td>{{ part['supplier_name'] }}</td>
                         <td>{{ part['notes'] }}</td>
                         <td>
                             {% if part.attachments %}
-                                {% for attachment in part.attachments.split(',') %}
-                                    <a href="{{ url_for('uploaded_file', filename=attachment) }}" target="_blank">{{ attachment }}</a><br>
-                                {% endfor %}
+                                <a href="{{ url_for('part_view', part_id=part.id, origin='admin') }}" class="btn btn-sm btn-outline-info">View</a>
+                            {% else %}
+                                No Attachments
                             {% endif %}
                         </td>
                         <td>

@@ -1,3 +1,28 @@
+/*
+ * Part Lister - Main JavaScript file for the primary user interface.
+ *
+ * Project Overview:
+ * This application allows users to manage a database of parts and create pick lists.
+ * This file contains the JavaScript for the main, modern interface, which uses Bootstrap 5.
+ * It is NOT used by the simplified scanner interface.
+ *
+ * Core Technologies:
+ * - Backend: Flask (Python)
+ * - Database: SQLite
+ * - Frontend (Main Interface): Bootstrap 5, Jinja2 templates
+ *
+ * Key Features Handled by this File:
+ * - AJAX for adding parts and list items without a full page reload.
+ * - Dynamic updates to the UI (e.g., toggling thumbnails, theme switching).
+ * - Handling for the image gallery modal on the Part View page.
+ * - Automatic polling for list updates on the main list page.
+ *
+ * Notes for Future Agents:
+# - Please update this header comment with any major changes or new requirements.
+ * - This file is for the main interface only. Do not add code here that is intended for the scanner interface.
+ * - The scanner interface (`scanner.html`) contains its own, simplified JavaScript.
+ * - The code uses modern JavaScript features that are not compatible with old browsers like IE on Windows CE.
+ */
 (function() {
     var originalTitle = document.title;
 
@@ -132,19 +157,23 @@
             const formData = new FormData(form);
             const barcode = formData.get('barcode');
             const quantity = formData.get('quantity');
+            const add_as_separate = document.getElementById('add_as_separate').checked;
 
             fetch('/add_to_list', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ barcode: barcode, quantity: quantity }),
+                body: JSON.stringify({
+                    barcode: barcode,
+                    quantity: quantity,
+                    add_as_separate: add_as_separate
+                }),
             })
             .then(response => response.json())
             .then(data => {
                 const alertContainer = document.getElementById('alert-container');
-                // Clear previous alerts
-                alertContainer.innerHTML = '';
+                alertContainer.innerHTML = ''; // Clear previous alerts
 
                 if (data.error) {
                     const errorDiv = document.createElement('div');
@@ -152,29 +181,7 @@
                     errorDiv.textContent = data.error;
                     alertContainer.appendChild(errorDiv);
                 } else {
-                    // Add new item to the table
-                    const tableBody = document.querySelector('.table tbody');
-                    const noItemsRow = tableBody.querySelector('td[colspan="7"]');
-                    if (noItemsRow) {
-                        noItemsRow.parentElement.remove();
-                    }
-
-                    const newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td class="thumbnail-col">${data.thumbnail ? `<img src="/thumbnails/${data.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
-                        <td>${data.barcode}</td>
-                        <td>${data.description}</td>
-                        <td>${data.uom}</td>
-                        <td>${data.supplier_name}</td>
-                        <td>${data.quantity}</td>
-                        <td>
-                            <a href="/edit_list_item/${data.id}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <a href="/delete_list_item/${data.id}" class="btn btn-sm btn-outline-danger">Delete</a>
-                        </td>
-                    `;
-                    tableBody.appendChild(newRow);
-
-                    // Clear the form fields and refocus
+                    pollList(); // Refresh the list
                     form.reset();
                     document.getElementById('barcode').focus();
                 }
@@ -262,7 +269,7 @@
         tableBody.innerHTML = '';
 
         if (items.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="7">No items in list.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8">No items in list.</td></tr>';
             return;
         }
 
@@ -272,6 +279,7 @@
                 <td class="thumbnail-col">${item.thumbnail ? `<img src="/thumbnails/${item.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
                 <td>${item.barcode}</td>
                 <td>${item.description}</td>
+                <td><a href="/part/${item.part_id}">${item.part_number}</a></td>
                 <td>${item.uom || ''}</td>
                 <td>${item.supplier_name || ''}</td>
                 <td>${item.quantity}</td>
@@ -284,20 +292,38 @@
         });
     }
 
+    function pollList() {
+        const tableBody = document.querySelector('.table tbody');
+        if (!tableBody || !tableBody.dataset.activeListId) return;
+        const activeListId = tableBody.dataset.activeListId;
+
+        fetch(`/api/lists/${activeListId}/items`)
+            .then(response => response.json())
+            .then(data => {
+                renderListTable(data);
+            })
+            .catch(error => console.error('Polling error:', error));
+    }
+
     function setupListPolling() {
         const tableBody = document.querySelector('.table tbody');
         if (!tableBody || !tableBody.dataset.activeListId) return;
 
-        const activeListId = tableBody.dataset.activeListId;
+        pollList(); // Poll immediately on page load
+        setInterval(pollList, 5000); // Poll every 5 seconds
+    }
 
-        setInterval(() => {
-            fetch(`/api/lists/${activeListId}/items`)
-                .then(response => response.json())
-                .then(data => {
-                    renderListTable(data);
-                })
-                .catch(error => console.error('Polling error:', error));
-        }, 5000); // Poll every 5 seconds
+    // Run on page load
+    function setupImageModal() {
+        const imageModal = document.getElementById('imageModal');
+        if (imageModal) {
+            imageModal.addEventListener('show.bs.modal', function (event) {
+                const link = event.relatedTarget;
+                const imageSrc = link.getAttribute('data-image-src');
+                const modalImage = imageModal.querySelector('#modalImage');
+                modalImage.src = imageSrc;
+            });
+        }
     }
 
     // Run on page load
@@ -309,6 +335,7 @@
         setupAjaxAddToList();
         setupAjaxAddPart();
         setupListPolling();
+        setupImageModal();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {

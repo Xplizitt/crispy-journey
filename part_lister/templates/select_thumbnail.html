@@ -10,35 +10,17 @@
 <p class="lead">Click on an image below to set it as the thumbnail for the selected parts.</p>
 <hr>
 
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+<div class="row">
     {% for image in images %}
-    <div class="col">
-        <a href="{{ url_for('apply_thumbnail', filename=image.filename, part_ids=part_ids) }}" class="text-decoration-none">
-            <div class="card h-100 card-hover">
-                <img src="{{ url_for('uploaded_file', filename=image.filename) }}" class="card-img-top" alt="{{ image.filename }}" style="aspect-ratio: 1 / 1; object-fit: cover;">
-                <div class="card-body">
-                    <p class="card-text small text-truncate">{{ image.filename }}</p>
-                </div>
-            </div>
-        </a>
-    </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('apply_thumbnail', filename=image.filename, part_ids=part_ids) }}">
+                <img src="{{ url_for('uploaded_file', filename=image.filename) }}" class="img-thumbnail" alt="{{ image.filename }}">
+            </a>
+        </div>
     {% else %}
-    <div class="col">
-        <p>No images found in the gallery.</p>
-    </div>
+        <div class="col">
+            <p>No images found in the gallery.</p>
+        </div>
     {% endfor %}
 </div>
-
-{% endblock %}
-
-{% block scripts %}
-<style>
-.card-hover {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-.card-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-</style>
 {% endblock %}
