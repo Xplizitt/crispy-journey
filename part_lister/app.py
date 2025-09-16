@@ -344,7 +344,8 @@ def select_thumbnail():
     db = get_db()
     cur = db.execute('''
         SELECT id, filename FROM attachments
-        WHERE filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif'
+        WHERE (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif')
+        AND filename NOT LIKE '%.dxf'
         ORDER BY id DESC
     ''')
     images = cur.fetchall()
