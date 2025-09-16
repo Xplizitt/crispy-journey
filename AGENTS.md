@@ -2,11 +2,11 @@
 
 This document provides critical instructions for any AI agent working on this codebase. Please read and adhere to these guidelines at all times.
 
-## 1. Changelog Maintenance (`agent_log.md`)
+## 1. Changelog Maintenance (`AGENT_LOG.md`)
 
 **This is the most important rule.**
 
-For **every change** you make to the codebase, you **must** document it in the `agent_log.md` file. This includes, but is not limited to:
+For **every change** you make to the codebase, you **must** document it in the `AGENT_LOG.md` file. This includes, but is not limited to:
 -   Creating, deleting, or modifying files.
 -   Installing dependencies.
 -   Running one-time scripts.
@@ -24,7 +24,7 @@ If you make a change and then revert it, you must log both the change and the re
 
 For major, architectural, or widespread changes, you should also add a note to the header comment of the affected source file(s).
 
--   **"Mile Markers":** These comments are intended to be "mile markers" that provide a high-level overview of the file's evolution, rather than the "inch markers" of the `agent_log.md`.
+-   **"Mile Markers":** These comments are intended to be "mile markers" that provide a high-level overview of the file's evolution, rather than the "inch markers" of the `AGENT_LOG.md`.
 -   **When to Add:** Use your judgment. A good rule of thumb is to add a header comment if you are adding a new feature, refactoring a significant portion of the file, or making a change that affects the file's core purpose.
 -   **Format:** The format is flexible, but it should be a brief, dated note. For example: `2025-09-16: Refactored to use the new authentication service.`
 
