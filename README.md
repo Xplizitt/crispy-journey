@@ -1,6 +1,6 @@
 # Part Lister Web Application
 
-A simple web application for building part lists, designed to be compatible with handheld scanners running Windows CE 6.0.
+A simple web application for building part lists, designed with a /scanner page to be compatible with handheld scanners running Windows CE 6.0.
 
 ## Technology Stack
 
