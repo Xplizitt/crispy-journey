@@ -201,6 +201,7 @@ def edit_part(part_id):
 
 @app.route('/part/<int:part_id>')
 def part_view(part_id):
+    origin = request.args.get('origin', 'admin')
     db = get_db()
     cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
     part = cur.fetchone()
@@ -221,7 +222,7 @@ def part_view(part_id):
         else:
             file_attachments.append(attachment)
 
-    return render_template('part_view.html', part=part, image_attachments=image_attachments, file_attachments=file_attachments)
+    return render_template('part_view.html', part=part, image_attachments=image_attachments, file_attachments=file_attachments, origin=origin)
 
 @app.route('/set_thumbnail/<int:part_id>/<int:attachment_id>')
 def set_thumbnail(part_id, attachment_id):
@@ -542,6 +543,44 @@ def index():
     error = session.pop('error', None)
     return render_template('index.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
 
+@app.route('/scanner')
+def scanner():
+    db = get_db()
+
+    # Ensure there's an active list in the session
+    if 'active_list_id' not in session:
+        # Find the first list (which is the default) and set it as active
+        cur = db.execute('SELECT id FROM lists ORDER BY id LIMIT 1')
+        first_list = cur.fetchone()
+        if first_list:
+            session['active_list_id'] = first_list['id']
+        else:
+            # Handle case where database might be empty
+            return "Error: No lists found in the database. Please initialize it.", 500
+
+    active_list_id = session['active_list_id']
+
+    # Get all lists for the dropdown switcher
+    cur = db.execute('SELECT * FROM lists ORDER BY name')
+    all_lists = cur.fetchall()
+
+    # Get the details of the active list
+    cur = db.execute('SELECT * FROM lists WHERE id = ?', [active_list_id])
+    active_list = cur.fetchone()
+
+    # Get items for the active list
+    cur = db.execute('''
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        FROM list_items li
+        JOIN parts p ON li.part_id = p.id
+        WHERE li.list_id = ?
+        ORDER BY li.id
+    ''', [active_list_id])
+    list_items = cur.fetchall()
+
+    error = session.pop('error', None)
+    return render_template('scanner.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
+
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
     data = request.get_json()
@@ -626,12 +665,17 @@ def api_get_list_items(list_id):
 
 @app.route('/edit_list_item/<int:item_id>', methods=['GET', 'POST'])
 def edit_list_item(item_id):
+    origin = request.args.get('origin', 'index')
     db = get_db()
+
     if request.method == 'POST':
         quantity = request.form.get('quantity', 1, type=int)
         db.execute('UPDATE list_items SET quantity = ? WHERE id = ?', [quantity, item_id])
         db.commit()
+        if origin == 'scanner':
+            return redirect(url_for('scanner'))
         return redirect(url_for('index'))
+
     cur = db.execute('''
         SELECT li.id, p.barcode, p.description, li.quantity
         FROM list_items li
@@ -639,9 +683,15 @@ def edit_list_item(item_id):
         WHERE li.id = ?
     ''', [item_id])
     item = cur.fetchone()
+
     if item is None:
         session['error'] = 'List item not found!'
+        if origin == 'scanner':
+            return redirect(url_for('scanner'))
         return redirect(url_for('index'))
+
+    if origin == 'scanner':
+        return render_template('edit_list_item_scanner.html', item=item)
     return render_template('edit_list_item.html', item=item)
 
 @app.route('/delete_list_item/<int:item_id>')

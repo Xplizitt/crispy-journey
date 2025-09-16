@@ -7,7 +7,11 @@
         <h1>Part Details</h1>
         <div>
             <a href="{{ url_for('edit_part', part_id=part.id) }}" class="btn btn-primary">Edit Part</a>
-            <a href="{{ url_for('admin') }}" class="btn btn-secondary">Back to Admin</a>
+            {% if origin == 'admin' %}
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary">Back to Admin</a>
+            {% else %}
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to List</a>
+            {% endif %}
         </div>
     </div>
     <hr>
