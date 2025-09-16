@@ -13,7 +13,7 @@ _basedir = os.path.abspath(os.path.dirname(__file__))
 DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
 UPLOAD_FOLDER = os.path.join(_basedir, 'static', 'uploads')
 THUMBNAIL_FOLDER = os.path.join(_basedir, 'static', 'thumbnails')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'zip', 'rar', '7z', 'cad'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'zip', 'rar', '7z', 'cad', 'dxf'}
 
 app.config['DATABASE'] = DATABASE_PATH
 app.config['SECRET_KEY'] = 'dev'
@@ -198,6 +198,30 @@ def edit_part(part_id):
     attachments = cur.fetchall()
 
     return render_template('edit_part.html', part=part, attachments=attachments)
+
+@app.route('/part/<int:part_id>')
+def part_view(part_id):
+    db = get_db()
+    cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+    part = cur.fetchone()
+    if part is None:
+        flash('Part not found!')
+        return redirect(url_for('admin'))
+
+    cur = db.execute('SELECT * FROM attachments WHERE part_id = ?', [part_id])
+    attachments = cur.fetchall()
+
+    image_attachments = []
+    file_attachments = []
+    image_extensions = ['.png', '.jpg', '.jpeg', '.gif']
+
+    for attachment in attachments:
+        if any(attachment['filename'].lower().endswith(ext) for ext in image_extensions):
+            image_attachments.append(attachment)
+        else:
+            file_attachments.append(attachment)
+
+    return render_template('part_view.html', part=part, image_attachments=image_attachments, file_attachments=file_attachments)
 
 @app.route('/set_thumbnail/<int:part_id>/<int:attachment_id>')
 def set_thumbnail(part_id, attachment_id):
@@ -506,7 +530,7 @@ def index():
 
     # Get items for the active list
     cur = db.execute('''
-        SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         WHERE li.list_id = ?
@@ -590,7 +614,7 @@ def switch_list(list_id):
 def api_get_list_items(list_id):
     db = get_db()
     cur = db.execute('''
-        SELECT li.id, p.barcode, p.description, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         WHERE li.list_id = ?

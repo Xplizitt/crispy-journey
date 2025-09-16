@@ -65,6 +65,7 @@
                     <th class="thumbnail-col">Thumbnail</th>
                     <th>Barcode</th>
                     <th>Description</th>
+                    <th>Part Number</th>
                     <th>UOM</th>
                     <th>Supplier</th>
                     <th>Quantity</th>
@@ -81,6 +82,7 @@
                     </td>
                     <td>{{ item['barcode'] }}</td>
                     <td>{{ item['description'] }}</td>
+                    <td><a href="{{ url_for('part_view', part_id=item.part_id) }}">{{ item['part_number'] }}</a></td>
                     <td>{{ item['uom'] }}</td>
                     <td>{{ item['supplier_name'] }}</td>
                     <td>{{ item['quantity'] }}</td>
@@ -91,7 +93,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7">No items in list.</td>
+                    <td colspan="8">No items in list.</td>
                 </tr>
                 {% endfor %}
             </tbody>
