@@ -157,19 +157,23 @@
             const formData = new FormData(form);
             const barcode = formData.get('barcode');
             const quantity = formData.get('quantity');
+            const add_as_separate = document.getElementById('add_as_separate').checked;
 
             fetch('/add_to_list', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ barcode: barcode, quantity: quantity }),
+                body: JSON.stringify({
+                    barcode: barcode,
+                    quantity: quantity,
+                    add_as_separate: add_as_separate
+                }),
             })
             .then(response => response.json())
             .then(data => {
                 const alertContainer = document.getElementById('alert-container');
-                // Clear previous alerts
-                alertContainer.innerHTML = '';
+                alertContainer.innerHTML = ''; // Clear previous alerts
 
                 if (data.error) {
                     const errorDiv = document.createElement('div');
@@ -177,30 +181,7 @@
                     errorDiv.textContent = data.error;
                     alertContainer.appendChild(errorDiv);
                 } else {
-                    // Add new item to the table
-                    const tableBody = document.querySelector('.table tbody');
-                    const noItemsRow = tableBody.querySelector('td[colspan="8"]');
-                    if (noItemsRow) {
-                        noItemsRow.parentElement.remove();
-                    }
-
-                    const newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td class="thumbnail-col">${data.thumbnail ? `<img src="/thumbnails/${data.thumbnail}" alt="Thumbnail" width="100">` : ''}</td>
-                        <td>${data.barcode}</td>
-                        <td>${data.description}</td>
-                        <td><a href="/part/${data.part_id}">${data.part_number}</a></td>
-                        <td>${data.uom}</td>
-                        <td>${data.supplier_name}</td>
-                        <td>${data.quantity}</td>
-                        <td>
-                            <a href="/edit_list_item/${data.id}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <a href="/delete_list_item/${data.id}" class="btn btn-sm btn-outline-danger">Delete</a>
-                        </td>
-                    `;
-                    tableBody.appendChild(newRow);
-
-                    // Clear the form fields and refocus
+                    pollList(); // Refresh the list
                     form.reset();
                     document.getElementById('barcode').focus();
                 }
@@ -311,20 +292,25 @@
         });
     }
 
+    function pollList() {
+        const tableBody = document.querySelector('.table tbody');
+        if (!tableBody || !tableBody.dataset.activeListId) return;
+        const activeListId = tableBody.dataset.activeListId;
+
+        fetch(`/api/lists/${activeListId}/items`)
+            .then(response => response.json())
+            .then(data => {
+                renderListTable(data);
+            })
+            .catch(error => console.error('Polling error:', error));
+    }
+
     function setupListPolling() {
         const tableBody = document.querySelector('.table tbody');
         if (!tableBody || !tableBody.dataset.activeListId) return;
 
-        const activeListId = tableBody.dataset.activeListId;
-
-        setInterval(() => {
-            fetch(`/api/lists/${activeListId}/items`)
-                .then(response => response.json())
-                .then(data => {
-                    renderListTable(data);
-                })
-                .catch(error => console.error('Polling error:', error));
-        }, 5000); // Poll every 5 seconds
+        pollList(); // Poll immediately on page load
+        setInterval(pollList, 5000); // Poll every 5 seconds
     }
 
     // Run on page load
