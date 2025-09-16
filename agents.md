@@ -20,6 +20,8 @@ Each log entry must include:
 
 If you make a change and then revert it, you must log both the change and the reversion, along with the reasoning for each.
 
+**Important:** Always check if `agent_log.md` exists before writing to it. If it exists, you **must append** your new log entry to the end of the file. **Do not overwrite the file.**
+
 ## 2. Source File Header Comments
 
 For major, architectural, or widespread changes, you should also add a note to the header comment of the affected source file(s).

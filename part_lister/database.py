@@ -13,6 +13,7 @@
 # - Please update this header comment with any major changes or new requirements.
 # - Be cautious when running this script, as it will delete all existing data.
 # - If you need to modify the database schema, make the changes in this file and then run it to re-initialize the database.
+# - 2025-09-16: Added support for assemblies, including the 'is_assembly' flag and the 'assembly_parts' table.
 
 import sqlite3
 import os
@@ -42,7 +43,19 @@ def init_db():
             uom TEXT,
             supplier_name TEXT,
             thumbnail TEXT,
-            notes TEXT
+            notes TEXT,
+            is_assembly INTEGER NOT NULL DEFAULT 0
+        )
+    ''')
+
+    # Create assembly_parts table
+    c.execute('''
+        CREATE TABLE assembly_parts (
+            assembly_id INTEGER NOT NULL,
+            part_id INTEGER NOT NULL,
+            PRIMARY KEY (assembly_id, part_id),
+            FOREIGN KEY (assembly_id) REFERENCES parts (id) ON DELETE CASCADE,
+            FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE CASCADE
         )
     ''')
 

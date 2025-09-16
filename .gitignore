@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 app.log
 part_to_add.csv
+node_modules/
+.pytest_cache/
+test_output.log

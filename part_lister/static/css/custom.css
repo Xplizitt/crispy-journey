@@ -8,3 +8,24 @@
 .attachment-item.active .btn-success {
     display: none;
 }
+
+.assembly-parent-row {
+    cursor: pointer;
+}
+
+.assembly-parent-row[aria-expanded="true"] .asm-designation {
+    display: none;
+}
+
+.assembly-parent-row[aria-expanded="true"] .bi-caret-down-fill {
+    transform: rotate(180deg);
+    transition: transform 0.2s ease-in-out;
+}
+
+.assembly-parent-row .bi-caret-down-fill {
+    transition: transform 0.2s ease-in-out;
+}
+
+.assembly-components-row .table {
+    background-color: #f8f9fa;
+}

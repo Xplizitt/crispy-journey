@@ -46,16 +46,32 @@
             <tbody>
                 {% for item in list_items %}
                 <tr>
-                    <td>
+                    <td class="thumbnail-col">
                         {% if item.thumbnail %}
                             <img src="{{ url_for('serve_thumbnail', filename=item.thumbnail, _external=True) }}" alt="Thumbnail" width="50">
                         {% endif %}
                     </td>
-                    <td>{{ item['barcode'] }}</td>
-                    <td>{{ item['description'] }}</td>
-                    <td>{{ item['uom'] }}</td>
-                    <td>{{ item['quantity'] }}</td>
+                    <td>{{ item.barcode }}</td>
+                    <td>
+                        {{ item.description }}
+                        {% if item.is_assembly and item.part_id not in expanded_ids %}
+                            <em class="text-muted"> (asm)</em>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.uom }}</td>
+                    <td>{{ item.quantity }}</td>
                 </tr>
+                {% if item.is_assembly and item.part_id in expanded_ids %}
+                    {% for component in item.components %}
+                    <tr class="component-print-row">
+                        <td class="thumbnail-col"></td>
+                        <td></td>
+                        <td class="ps-4">{{ component.description }}</td>
+                        <td>{{ component.uom }}</td>
+                        <td></td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
                 {% else %}
                 <tr>
                     <td colspan="5">No items in list.</td>

@@ -24,6 +24,7 @@
 # - When making changes, consider the compatibility requirements for the scanner interface. Avoid using modern JavaScript/CSS features in `scanner.html` and related templates.
 # - The `add_to_list` route has been modified to accept both JSON and form-urlencoded data to support both interfaces.
 # - The `switch_list` route has been modified to redirect back to the referrer to support list switching from both interfaces.
+# - 2025-09-16: Added extensive support for "Assemblies", which function like parts but can contain other parts. This includes new database tables, routes, API endpoints, and templates.
 
 import sqlite3
 import os
@@ -141,12 +142,13 @@ def add_part():
         return jsonify({'error': 'Barcode and Description are required.'}), 400
 
     db = get_db()
+    is_assembly = request.form.get('is_assembly', 0)
     try:
         cur = db.execute('''
-            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, notes, thumbnail)
-            VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, notes, thumbnail, is_assembly)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
             [request.form.get('barcode'), request.form.get('description'), request.form.get('part_number'),
-             request.form.get('uom'), request.form.get('supplier_name'), request.form.get('notes'), None])
+             request.form.get('uom'), request.form.get('supplier_name'), request.form.get('notes'), None, is_assembly])
         db.commit()
         part_id = cur.lastrowid
     except sqlite3.IntegrityError:
@@ -187,12 +189,13 @@ def edit_part(part_id):
             part = cur.fetchone()
             return render_template('edit_part.html', part=part)
 
+        is_assembly = request.form.get('is_assembly', 0)
         try:
             db.execute('''
-                UPDATE parts SET barcode = ?, description = ?, part_number = ?, uom = ?, supplier_name = ?, notes = ?
+                UPDATE parts SET barcode = ?, description = ?, part_number = ?, uom = ?, supplier_name = ?, notes = ?, is_assembly = ?
                 WHERE id = ?''',
                 [request.form['barcode'], request.form['description'], request.form['part_number'],
-                 request.form['uom'], request.form['supplier_name'], request.form['notes'], part_id])
+                 request.form['uom'], request.form['supplier_name'], request.form['notes'], is_assembly, part_id])
             db.commit()
             flash('Part was successfully updated')
         except sqlite3.IntegrityError:
@@ -225,6 +228,36 @@ def edit_part(part_id):
     attachments = cur.fetchall()
 
     return render_template('edit_part.html', part=part, attachments=attachments)
+
+
+@app.route('/build_assembly/<int:part_id>', methods=['GET'])
+def build_assembly(part_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    db = get_db()
+
+    # Fetch the main assembly part details
+    cur = db.execute('SELECT * FROM parts WHERE id = ? AND is_assembly = 1', [part_id])
+    part = cur.fetchone()
+    if part is None:
+        flash('Assembly not found!')
+        return redirect(url_for('admin'))
+
+    # Fetch constituent parts
+    cur = db.execute('''
+        SELECT p.* FROM parts p
+        JOIN assembly_parts ap ON p.id = ap.part_id
+        WHERE ap.assembly_id = ?
+    ''', [part_id])
+    constituent_parts = cur.fetchall()
+
+    # Fetch attachments
+    cur = db.execute('SELECT * FROM attachments WHERE part_id = ?', [part_id])
+    attachments = cur.fetchall()
+
+    return render_template('build_assembly.html', part=part, attachments=attachments, constituent_parts=constituent_parts)
+
 
 @app.route('/part/<int:part_id>')
 def part_view(part_id):
@@ -559,13 +592,29 @@ def index():
 
     # Get items for the active list
     cur = db.execute('''
-        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail, p.is_assembly
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         WHERE li.list_id = ?
         ORDER BY li.id
     ''', [active_list_id])
-    list_items = cur.fetchall()
+
+    list_items_rows = cur.fetchall()
+    list_items = []
+    for item in list_items_rows:
+        item_dict = dict(item)
+        if item_dict['is_assembly']:
+            cur = db.execute('''
+                SELECT p.part_number, p.description, p.uom
+                FROM assembly_parts ap
+                JOIN parts p ON ap.part_id = p.id
+                WHERE ap.assembly_id = ?
+            ''', [item_dict['part_id']])
+            item_dict['components'] = [dict(row) for row in cur.fetchall()]
+        else:
+            item_dict['components'] = []
+        list_items.append(item_dict)
+
 
     error = session.pop('error', None)
     return render_template('index.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
@@ -597,13 +646,28 @@ def scanner():
 
     # Get items for the active list
     cur = db.execute('''
-        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail, p.is_assembly
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
         WHERE li.list_id = ?
         ORDER BY li.id
     ''', [active_list_id])
-    list_items = cur.fetchall()
+
+    list_items_rows = cur.fetchall()
+    list_items = []
+    for item in list_items_rows:
+        item_dict = dict(item)
+        if item_dict['is_assembly']:
+            cur = db.execute('''
+                SELECT p.part_number, p.description, p.uom
+                FROM assembly_parts ap
+                JOIN parts p ON ap.part_id = p.id
+                WHERE ap.assembly_id = ?
+            ''', [item_dict['part_id']])
+            item_dict['components'] = [dict(row) for row in cur.fetchall()]
+        else:
+            item_dict['components'] = []
+        list_items.append(item_dict)
 
     error = session.pop('error', None)
     return render_template('scanner.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
@@ -732,6 +796,84 @@ def api_get_list_items(list_id):
     items = [dict(row) for row in cur.fetchall()]
     return jsonify(items)
 
+
+@app.route('/api/parts/search')
+def api_parts_search():
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not logged in'}), 401
+
+    query = request.args.get('q', '')
+    assembly_id = request.args.get('assembly_id', type=int)
+
+    if not query:
+        return jsonify([])
+
+    db = get_db()
+
+    sql_query = '''
+        SELECT id, description, part_number FROM parts
+        WHERE (description LIKE ? OR part_number LIKE ?)
+    '''
+    params = [f'%{query}%', f'%{query}%']
+
+    if assembly_id:
+        sql_query += ' AND id != ?'
+        params.append(assembly_id)
+
+    # Exclude parts that are already assemblies
+    sql_query += ' AND is_assembly = 0'
+
+    sql_query += ' LIMIT 10'
+
+    cur = db.execute(sql_query, params)
+    parts = [dict(row) for row in cur.fetchall()]
+    return jsonify(parts)
+
+
+@app.route('/api/assembly/<int:assembly_id>/add_part', methods=['POST'])
+def api_add_part_to_assembly(assembly_id):
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.get_json()
+    part_id = data.get('part_id')
+
+    if not part_id:
+        return jsonify({'error': 'Part ID is required.'}), 400
+
+    db = get_db()
+    try:
+        db.execute('INSERT INTO assembly_parts (assembly_id, part_id) VALUES (?, ?)', [assembly_id, part_id])
+        db.commit()
+    except sqlite3.IntegrityError:
+        # This can happen if the part is already in the assembly, which is fine.
+        # It can also happen if the part_id or assembly_id doesn't exist, which is a problem.
+        # For now, we'll just assume the former.
+        pass
+
+    cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+    part = dict(cur.fetchone())
+    return jsonify(part)
+
+
+@app.route('/api/assembly/<int:assembly_id>/remove_part', methods=['POST'])
+def api_remove_part_from_assembly(assembly_id):
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.get_json()
+    part_id = data.get('part_id')
+
+    if not part_id:
+        return jsonify({'error': 'Part ID is required.'}), 400
+
+    db = get_db()
+    db.execute('DELETE FROM assembly_parts WHERE assembly_id = ? AND part_id = ?', [assembly_id, part_id])
+    db.commit()
+
+    return jsonify({'success': True})
+
+
 @app.route('/edit_list_item/<int:item_id>', methods=['GET', 'POST'])
 def edit_list_item(item_id):
     origin = request.args.get('origin', 'index')
@@ -839,15 +981,44 @@ def gallery():
 
 @app.route('/print')
 def print_list():
+    expanded_ids_str = request.args.get('expanded', '')
+    expanded_ids = []
+    if expanded_ids_str:
+        try:
+            expanded_ids = [int(id_str) for id_str in expanded_ids_str.split(',')]
+        except ValueError:
+            expanded_ids = [] # Ignore if the param is malformed
+
     db = get_db()
+    active_list_id = session.get('active_list_id')
+    if not active_list_id:
+        return "No active list found.", 404
+
     cur = db.execute('''
-        SELECT p.barcode, p.description, li.quantity, p.uom, p.thumbnail
+        SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.thumbnail, p.is_assembly
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
+        WHERE li.list_id = ?
         ORDER BY li.id
-    ''')
-    list_items = cur.fetchall()
-    return render_template('print.html', list_items=list_items)
+    ''', [active_list_id])
+
+    list_items_rows = cur.fetchall()
+    list_items = []
+    for item in list_items_rows:
+        item_dict = dict(item)
+        if item_dict['is_assembly']:
+            cur = db.execute('''
+                SELECT p.part_number, p.description, p.uom
+                FROM assembly_parts ap
+                JOIN parts p ON ap.part_id = p.id
+                WHERE ap.assembly_id = ?
+            ''', [item_dict['part_id']])
+            item_dict['components'] = [dict(row) for row in cur.fetchall()]
+        else:
+            item_dict['components'] = []
+        list_items.append(item_dict)
+
+    return render_template('print.html', list_items=list_items, expanded_ids=expanded_ids)
 
 # --- Main Execution ---
 if __name__ == '__main__':

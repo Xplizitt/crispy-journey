@@ -313,6 +313,113 @@
         setInterval(pollList, 5000); // Poll every 5 seconds
     }
 
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
+    }
+
+    function setupAssemblyBuilder() {
+        const searchInput = document.getElementById('part-search');
+        if (!searchInput) return; // Not on the assembly builder page
+
+        const assemblyPartsList = document.getElementById('assembly-parts-list');
+        const searchResults = document.getElementById('part-search-results');
+        const assemblyId = assemblyPartsList.dataset.assemblyId;
+
+        const doSearch = debounce(function(query) {
+            if (query.length < 2) {
+                searchResults.innerHTML = '';
+                return;
+            }
+            fetch(`/api/parts/search?q=${query}&assembly_id=${assemblyId}`)
+                .then(response => response.json())
+                .then(parts => {
+                    searchResults.innerHTML = '';
+                    parts.forEach(part => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        li.innerHTML = `
+                            <span>${part.description} (${part.part_number})</span>
+                            <button class="btn btn-sm btn-success add-part-btn" data-part-id="${part.id}">Add</button>
+                        `;
+                        searchResults.appendChild(li);
+                    });
+                });
+        }, 250);
+
+        searchInput.addEventListener('keyup', (e) => {
+            doSearch(e.target.value);
+        });
+
+        searchResults.addEventListener('click', (e) => {
+            if (e.target.classList.contains('add-part-btn')) {
+                const partId = e.target.dataset.partId;
+                fetch(`/api/assembly/${assemblyId}/add_part`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ part_id: partId })
+                })
+                .then(response => response.json())
+                .then(part => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    li.dataset.partId = part.id;
+                    li.innerHTML = `
+                        ${part.description} (${part.part_number})
+                        <button class="btn btn-sm btn-danger remove-part-btn">Remove</button>
+                    `;
+                    assemblyPartsList.appendChild(li);
+                    e.target.closest('li').remove(); // Remove from search results
+                });
+            }
+        });
+
+        assemblyPartsList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-part-btn')) {
+                const partId = e.target.closest('li').dataset.partId;
+                fetch(`/api/assembly/${assemblyId}/remove_part`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ part_id: partId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        e.target.closest('li').remove();
+                    }
+                });
+            }
+        });
+    }
+
+    function setupPrintButton() {
+        const printButton = document.querySelector('a[href="/print"]');
+        if (!printButton) return;
+
+        printButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            const expandedRows = document.querySelectorAll('.assembly-parent-row[aria-expanded="true"]');
+            const expandedIds = Array.from(expandedRows).map(row => {
+                const targetId = row.dataset.bsTarget;
+                return targetId.replace('#asm-', '');
+            });
+
+            const url = `/print?expanded=${expandedIds.join(',')}`;
+            window.open(url, '_blank');
+        });
+    }
+
+
     // Run on page load
     function setupImageModal() {
         const imageModal = document.getElementById('imageModal');
@@ -336,6 +443,8 @@
         setupAjaxAddPart();
         setupListPolling();
         setupImageModal();
+        setupAssemblyBuilder();
+        setupPrintButton();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {

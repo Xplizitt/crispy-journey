@@ -45,6 +45,31 @@
                 <button type="submit" class="btn btn-primary">Update Part</button>
                 <a href="{{ url_for('admin') }}" class="btn btn-secondary">Back to Admin</a>
             </form>
+
+            <hr>
+            <h2>Constituent Parts</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Current Parts</h4>
+                    <ul class="list-group" id="assembly-parts-list" data-assembly-id="{{ part.id }}">
+                        {% for p in constituent_parts %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center" data-part-id="{{ p.id }}">
+                                {{ p.description }} ({{ p.part_number }})
+                                <button class="btn btn-sm btn-danger remove-part-btn">Remove</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Add Part to Assembly</h4>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="part-search" placeholder="Search for parts by name or part number...">
+                    </div>
+                    <ul class="list-group" id="part-search-results">
+                        <!-- Search results will be dynamically inserted here -->
+                    </ul>
+                </div>
+            </div>
         </div>
         <div class="col-md-4">
             <h2>Attachments</h2>

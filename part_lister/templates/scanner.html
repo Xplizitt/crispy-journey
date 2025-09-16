@@ -71,15 +71,38 @@
         </thead>
         <tbody>
             {% for item in list_items %}
-            <tr>
-                <td>{{ item['barcode'] }}</td>
-                <td>{{ item['description'] }}</td>
-                <td>{{ item['quantity'] }}</td>
-                <td>
-                    <a href="{{ url_for('edit_list_item', item_id=item['id'], origin='scanner') }}">Edit</a> |
-                    <a href="{{ url_for('delete_list_item', item_id=item['id']) }}">Delete</a>
-                </td>
-            </tr>
+                {% if item.is_assembly %}
+                    <tr onclick="toggleAssembly('asm-{{ item.id }}')" style="cursor: pointer; font-weight: bold;">
+                        <td><span id="asm-{{ item.id }}-indicator">+</span> {{ item.barcode }}</td>
+                        <td>
+                            {{ item.description }}
+                            <em style="font-style: italic; color: #555;"> (asm)</em>
+                        </td>
+                        <td>{{ item.quantity }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_list_item', item_id=item['id'], origin='scanner') }}">Edit</a> |
+                            <a href="{{ url_for('delete_list_item', item_id=item['id']) }}">Delete</a>
+                        </td>
+                    </tr>
+                    {% for component in item.components %}
+                    <tr id="asm-{{ item.id }}" class="component-row" style="display: none; background-color: #f0f0f0;">
+                        <td></td>
+                        <td style="padding-left: 30px;">{{ component.description }}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>{{ item.barcode }}</td>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_list_item', item_id=item['id'], origin='scanner') }}">Edit</a> |
+                            <a href="{{ url_for('delete_list_item', item_id=item['id']) }}">Delete</a>
+                        </td>
+                    </tr>
+                {% endif %}
             {% else %}
             <tr>
                 <td colspan="4">No items in list.</td>
@@ -88,5 +111,18 @@
         </tbody>
     </table>
 
+    <script>
+        function toggleAssembly(className) {
+            var rows = document.getElementsByClassName(className);
+            var indicator = document.getElementById(className + '-indicator');
+            var isHidden = rows[0].style.display === 'none';
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].style.display = isHidden ? '' : 'none';
+            }
+            if (indicator) {
+                indicator.innerHTML = isHidden ? '-' : '+';
+            }
+        }
+    </script>
 </body>
 </html>
