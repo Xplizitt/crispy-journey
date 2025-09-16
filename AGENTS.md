@@ -2,6 +2,9 @@
 
 This document provides critical instructions for any AI agent working on this codebase. Please read and adhere to these guidelines at all times.
 
+And make sure the /scanner page and it's functions remain a compatible frontend for Windows CE 6.0 scanners using Internet Explorer
+
+
 ## 1. Changelog Maintenance (`AGENT_LOG.md`)
 
 **This is the most important rule.**
