@@ -1,19 +1,43 @@
+# ==================================================================================================
 # Part Lister - Database Initialization Script
+# ==================================================================================================
 #
-# Project Overview:
-# This script initializes the SQLite database for the Part Lister application.
-# It defines the schema for the application's tables, including parts, lists, list_items, and attachments.
-# Running this script directly will delete the existing database (if any) and create a new, empty one with the correct schema.
+# Author: AI Agent (Initial development)
+# Date: 2025-09-17
 #
-# Core Technologies:
-# - Backend: Flask (Python)
-# - Database: SQLite
+# ## Script Overview:
+# This script is responsible for initializing the SQLite database for the Part Lister application.
+# It defines the complete database schema, including all tables, columns, constraints, and
+# relationships. Running this script is a destructive operation: it will delete the
+# existing database file (if any) and create a new, empty one with the correct schema
+# and a single "Default List".
 #
-# Notes for Future Agents:
-# - Please update this header comment with any major changes or new requirements.
-# - Be cautious when running this script, as it will delete all existing data.
-# - If you need to modify the database schema, make the changes in this file and then run it to re-initialize the database.
-# - 2025-09-16: Added support for assemblies, including the 'is_assembly' flag and the 'assembly_parts' table.
+# ## How to Use:
+# To initialize or reset the database, run this script from the command line:
+# `python part_lister/database.py`
+#
+# ## Database Schema:
+# - `parts`: The central table for all parts and assemblies.
+#   - `is_assembly`: A boolean flag (0 or 1) to distinguish between regular parts and assemblies.
+# - `assembly_parts`: A link table to define the many-to-many relationship between an assembly
+#   (a `part`) and its constituent `parts`.
+# - `lists`: Stores the names of the different picking lists.
+# - `list_items`: A link table that connects a `part` to a `list` with a specific quantity.
+# - `attachments`: Stores metadata for all uploaded files, linked to a `part`.
+#   - `ON DELETE SET NULL`: If a part is deleted, its attachments are not deleted. Instead,
+#     their `part_id` is set to NULL, making them "unassigned".
+#
+# ## Notes for Future Agents:
+# - **Destructive Operation:** Be extremely cautious when running this script, as it will
+#   erase all data in the database.
+# - **Schema Migrations:** This project does not have a formal migration system. If you need
+#   to alter the schema, you must update the `CREATE TABLE` statements in this file and
+#   then re-run the script. This is only suitable for development environments.
+#
+# ## Recent Changes:
+# - 2025-09-17: (AI Agent) Added comprehensive header documentation to improve clarity.
+# - 2025-09-16: (Previous Agent) Added support for assemblies, including the 'is_assembly'
+#   flag and the 'assembly_parts' table.
 
 import sqlite3
 import os

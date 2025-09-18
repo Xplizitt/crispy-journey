@@ -85,3 +85,32 @@ This log file tracks changes made to the codebase by the AI agent. It includes t
 
 ### Change: Installed dependencies.
 **Reasoning:** Installed `pytest`, `werkzeug`, and all dependencies from `requirements.txt` to set up the testing environment.
+
+---
+
+## 2025-09-17: Documentation and Scanner UI Overhaul
+
+### Change: Added comprehensive documentation.
+**Reasoning:** The user requested thorough documentation for the application.
+1.  **Created `DOCUMENTATION.md`:** A new, detailed guide for both users and developers, explaining the application's features, architecture, and setup.
+2.  **Added Header Comments:** Added detailed header comments to `part_lister/app.py`, `part_lister/database.py`, and `part_lister/static/js/app.js` to improve code clarity and maintainability for future developers.
+3.  **Added Inline Comments:** Added inline comments to `part_lister/app.py` to clarify the logic of more complex functions and routes.
+
+### Change: Improved Windows CE / IE compatibility for the scanner interface.
+**Reasoning:** The user requested a review of the `/scanner` page for compatibility with older devices.
+1.  **Researched IE on WinCE:** Investigated the capabilities of the target platform and identified that `addEventListener` was a potential point of failure.
+2.  **Patched Event Listener:** Replaced the `addEventListener` call in `part_lister/templates/scanner.html` with a robust, cross-browser `addEvent` function that falls back to `attachEvent` for older browsers.
+
+### Change: Implemented UI/UX improvements for the scanner interface.
+**Reasoning:** Based on the user's request and my analysis, I implemented a number of improvements to make the scanner workflow more efficient and user-friendly on a constrained device.
+1.  **Autofocus Barcode Input:** Added the `autofocus` attribute to the barcode input field so the user can begin scanning immediately upon page load.
+2.  **Auto-select Quantity:** Modified the script so that when the user presses Enter after scanning, the quantity field is not only focused but its content is also selected. This allows for faster overwriting of the default quantity.
+3.  **Added "Clear Form" Button:** Added a standard `<button type="reset">` to the form, allowing the user to easily clear any manually typed input.
+4.  **Implemented Status Feedback:** Reworked the backend `add_to_list` route to redirect to the scanner page with URL parameters (e.g., `?scan_status=success`). The `scanner.html` page now uses these parameters to provide clear user feedback:
+    *   **Visual Flash:** The screen briefly flashes green for success or red for an error.
+    *   **Status Messages:** A "Last Scanned: ..." message is shown on success, and a prominent, styled error message is shown on failure.
+
+### Change: Refactored and fixed the test suite.
+**Reasoning:** While running tests to verify my changes, I encountered a critical test failure (`FileNotFoundError` for the database).
+1.  **Diagnosed Test Pollution:** I discovered that the test files were using different, conflicting fixtures for database setup. `tests/test_assemblies.py` was renaming the main `parts.db` file, causing `tests/test_app.py` to fail.
+2.  **Standardized Test Fixtures:** I refactored the fixtures in both `test_app.py` and `test_assemblies.py` to use a consistent, self-contained approach. Each test file now creates its own temporary database for its tests and cleans it up afterward, ensuring they are independent and do not interfere with the main database or each other. This makes the entire test suite more robust and reliable.

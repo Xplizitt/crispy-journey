@@ -14,33 +14,30 @@ def app():
 
     # Initialize the database
     with flask_app.app_context():
-        # Directly call init_db, but we need to point it to the test DB
-        # This is a bit of a hack because database.py has a hardcoded path
-        # For a real app, this would be configured better.
-        original_db_path = 'parts.db'
-        if os.path.exists(original_db_path):
-            os.rename(original_db_path, original_db_path + '.bak')
+        # This is a workaround because database.py has a hardcoded path.
+        # A more robust solution would involve making the database path in database.py configurable.
+
+        # Store original path from the module if it exists
+        import part_lister.database
+        original_path_val = getattr(part_lister.database, 'DATABASE_PATH', None)
+
+        # Set the path for initialization
+        part_lister.database.DATABASE_PATH = db_path
+
         if os.path.exists(db_path):
             os.remove(db_path)
 
-        # Temporarily change the DATABASE_PATH in the database module
-        import part_lister.database
-        original_init_path = part_lister.database.DATABASE_PATH
-        part_lister.database.DATABASE_PATH = os.path.join(os.path.dirname(__file__), '..', db_path)
-
         init_db()
-
-        # Restore original path
-        part_lister.database.DATABASE_PATH = original_init_path
-
 
     yield flask_app
 
     # Clean up the database
     if os.path.exists(db_path):
         os.remove(db_path)
-    if os.path.exists(original_db_path + '.bak'):
-        os.rename(original_db_path + '.bak', original_db_path)
+
+    # Restore the original path in the module
+    if original_path_val:
+        part_lister.database.DATABASE_PATH = original_path_val
 
 
 @pytest.fixture

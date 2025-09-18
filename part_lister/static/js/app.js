@@ -1,27 +1,50 @@
 /*
- * Part Lister - Main JavaScript file for the primary user interface.
+ * ==================================================================================================
+ * Part Lister - Main Application JavaScript
+ * ==================================================================================================
  *
- * Project Overview:
- * This application allows users to manage a database of parts and create pick lists.
- * This file contains the JavaScript for the main, modern interface, which uses Bootstrap 5.
- * It is NOT used by the simplified scanner interface.
+ * Author: AI Agent (Initial development)
+ * Date: 2025-09-17
  *
- * Core Technologies:
- * - Backend: Flask (Python)
- * - Database: SQLite
- * - Frontend (Main Interface): Bootstrap 5, Jinja2 templates
+ * ## File Overview:
+ * This file contains all the client-side JavaScript for the main, modern user interface of the
+ * Part Lister application. It handles dynamic and interactive features such as AJAX form
+ * submissions, UI updates, theme switching, and more. This entire file is wrapped in an
+ * Immediately Invoked Function Expression (IIFE) to avoid polluting the global namespace.
  *
- * Key Features Handled by this File:
- * - AJAX for adding parts and list items without a full page reload.
- * - Dynamic updates to the UI (e.g., toggling thumbnails, theme switching).
- * - Handling for the image gallery modal on the Part View page.
- * - Automatic polling for list updates on the main list page.
+ * ## Important Distinction:
+ * This script is **NOT** used by the simplified `/scanner` interface. The scanner page has its
+ * own minimal, inline JavaScript to ensure maximum compatibility with legacy browsers like
+ * Internet Explorer on Windows CE 6.0.
  *
- * Notes for Future Agents:
-# - Please update this header comment with any major changes or new requirements.
- * - This file is for the main interface only. Do not add code here that is intended for the scanner interface.
- * - The scanner interface (`scanner.html`) contains its own, simplified JavaScript.
- * - The code uses modern JavaScript features that are not compatible with old browsers like IE on Windows CE.
+ * ## Key Features Handled by this File:
+ * - **AJAX Operations:**
+ *   - `setupAjaxAddPart()`: Adds a new part without a full page reload.
+ *   - `setupAjaxAddToList()`: Adds an item to the current list without a full page reload.
+ * - **Live UI Updates:**
+ *   - `setupListPolling()`: Periodically fetches and re-renders the current list to show
+ *     real-time updates.
+ * - **DOM Manipulation & Event Handling:**
+ *   - `setupThumbnailToggle()`: Shows/hides thumbnail columns.
+ *   - `setupThemeSwitcher()`: Switches between light and dark themes.
+ *   - `setupBulkEdit()`: Handles the "select all" checkbox in the admin parts list.
+ *   - `setupAssemblyBuilder()`: Manages the part search and add/remove functionality for
+ *     building assemblies.
+ * - **Browser Compatibility:**
+ *   - While this file uses modern JavaScript (`const`, `let`, arrow functions, `fetch`), some
+ *     older functions like `setupTitleUpdates` include fallbacks for `attachEvent` for
+ *     compatibility with older IE versions (though this is largely historical, as the
+ *     primary target is modern browsers).
+ *
+ * ## Notes for Future Agents:
+ * - **Do Not Add Scanner Logic:** Any JavaScript intended for the `/scanner` page should be
+ *   added directly to `scanner.html`, not here.
+ * - **Dependencies:** This script relies on Bootstrap 5 for some modal and DOM interactions.
+ * - **Event Delegation:** For dynamically added elements (like in the assembly builder),
+ *   event listeners are attached to a static parent container.
+ *
+ * ## Recent Changes:
+ * - 2025-09-17: (AI Agent) Added comprehensive header documentation to improve clarity.
  */
 (function() {
     var originalTitle = document.title;

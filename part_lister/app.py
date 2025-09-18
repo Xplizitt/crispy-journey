@@ -1,31 +1,53 @@
-# Part Lister - A Flask-based application for managing parts and creating pick lists.
+# ==================================================================================================
+# Part Lister - Main Flask Application
+# ==================================================================================================
 #
-# Project Overview:
-# This application allows users to manage a database of parts, including their details and attachments (images, DXF files, etc.).
-# It provides a main interface for managing parts and a simplified interface for use on older devices like Windows CE scanners.
-# Users can also create and manage pick lists of parts.
+# Author: AI Agent (Initial development)
+# Date: 2025-09-17
 #
-# Core Technologies:
+# ## Project Overview:
+# This is the core backend file for the Part Lister application. It is a monolithic Flask
+# application that handles all routing, database interaction, and business logic. The
+# application is designed to manage a database of parts, their associated files (attachments),
+# and to build and manage picking lists.
+#
+# ## Key Architectural Points:
+# - **Two User Interfaces:** The application serves two distinct frontends:
+#   1. A modern, feature-rich interface for desktop browsers (using Bootstrap 5 and jQuery).
+#   2. A lightweight, simplified "scanner" interface (`/scanner`) designed for maximum
+#      compatibility with older devices, specifically handheld scanners running Windows CE 6.0
+#      with Internet Explorer.
+# - **Monolithic Structure:** All application logic is contained within this single file.
+#   This includes user authentication, part management, file uploads, list management, and API
+#   endpoints.
+# - **SQLite Database:** The application uses a single SQLite database file (`parts.db`) for all
+#   data persistence. Database setup and connection management are handled within this file.
+# - **Templating:** Frontend pages are rendered using Flask's default Jinja2 templating engine.
+# - **Session Management:** Flask's session management is used for handling admin login state.
+#
+# ## Core Technologies:
 # - Backend: Flask (Python)
 # - Database: SQLite
-# - Frontend (Main Interface): Bootstrap 5, Jinja2 templates
-# - Frontend (Scanner Interface): Basic HTML and JavaScript for compatibility with older browsers (e.g., Internet Explorer on Windows CE 6.0).
+# - Frontend (Main): Bootstrap 5, Jinja2, custom JavaScript (`app.js`)
+# - Frontend (Scanner): Basic HTML, inline CSS, and minimal inline JavaScript.
 #
-# Key Features & Recent Changes (as of 2025-09-16):
-# - Part Management: Add, edit, delete parts.
-# - Part View: A detailed view for each part, with a photo gallery and a list of file attachments.
-# - Scanner Interface: A simplified interface at `/scanner` for adding items to lists on devices with old browsers.
-# - File Attachments: Supports various file types, including images and DXF files.
-# - Thumbnail Support: Parts can have a thumbnail image.
+# ## Notes for Future Agents:
+# - **Compatibility is Key:** When modifying any code related to the `/scanner` route or its
+#   templates, prioritize compatibility over modern features. Avoid complex CSS and any
+#   JavaScript that is not ES3-compliant.
+# - **Logging:** Per `agents.md`, all changes must be logged in `agent_log.md`.
+# - **Error Handling:** Pay attention to how different routes handle errors. Some return JSON
+#   responses for AJAX calls, while others use `flash()` for traditional form submissions.
+# - **Mile Markers:** Add a dated note to this header for any major architectural changes,
+#   new features, or significant refactoring.
 #
-# Notes for Future Agents:
-# - Please update this header comment with any major changes or new requirements.
-# - The application has two distinct user interfaces: the main one (using Bootstrap 5) and the scanner one (using basic HTML).
-# - When making changes, consider the compatibility requirements for the scanner interface. Avoid using modern JavaScript/CSS features in `scanner.html` and related templates.
-# - The `add_to_list` route has been modified to accept both JSON and form-urlencoded data to support both interfaces.
-# - The `switch_list` route has been modified to redirect back to the referrer to support list switching from both interfaces.
-# - 2025-09-16: Added extensive support for "Assemblies", which function like parts but can contain other parts. This includes new database tables, routes, API endpoints, and templates.
-
+# ## Recent Changes:
+# - 2025-09-17: (AI Agent) Added comprehensive header documentation and inline comments to
+#   improve code clarity and maintainability.
+# - 2025-09-16: (Previous Agent) Added extensive support for "Assemblies", which function like
+#   parts but can contain other parts. This included new database tables, routes, API
+#   endpoints, and templates.
+#
 import sqlite3
 import os
 import csv
@@ -37,44 +59,60 @@ from PIL import Image
 app = Flask(__name__)
 
 # --- Configuration ---
+# Absolute path to the directory of the current script.
 _basedir = os.path.abspath(os.path.dirname(__file__))
+# Path to the SQLite database file, located in the parent directory of the app.
 DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
+# Folder where uploaded part attachments will be stored.
 UPLOAD_FOLDER = os.path.join(_basedir, 'static', 'uploads')
+# Folder where generated thumbnails for images will be stored.
 THUMBNAIL_FOLDER = os.path.join(_basedir, 'static', 'thumbnails')
+# Set of allowed file extensions for uploads.
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'zip', 'rar', '7z', 'cad', 'dxf'}
 
 app.config['DATABASE'] = DATABASE_PATH
-app.config['SECRET_KEY'] = 'dev'
+app.config['SECRET_KEY'] = 'dev' # Secret key for session management. Should be changed for production.
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['THUMBNAIL_FOLDER'] = THUMBNAIL_FOLDER
-ADMIN_PASSWORD = 'admin'
+ADMIN_PASSWORD = 'admin' # Simple password for the admin interface. Should be changed for production.
 
 # --- Utility Functions ---
 def allowed_file(filename):
+    """Checks if a filename has an allowed extension."""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def create_thumbnail(image_path, thumbnail_path, size=(128, 128)):
+    """Creates a thumbnail for an image file."""
     try:
         with Image.open(image_path) as img:
             img.thumbnail(size)
             img.save(thumbnail_path, "PNG")
             return True
     except IOError:
+        # This can happen if the file is not an image or is corrupted.
         return False
 
 # --- Database Handling ---
 def get_db():
+    """
+    Opens a new database connection if there is none yet for the
+    current application context. The connection is stored in Flask's `g` object,
+    which is a per-request global namespace. This ensures that the database
+    connection is available throughout the request lifecycle.
+    """
     db_path = app.config['DATABASE']
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Database file not found at the expected path: {os.path.abspath(db_path)}")
     if not hasattr(g, 'sqlite_db'):
         g.sqlite_db = sqlite3.connect(db_path)
+        # Use sqlite3.Row to allow accessing columns by name.
         g.sqlite_db.row_factory = sqlite3.Row
     return g.sqlite_db
 
 @app.teardown_appcontext
 def close_db(error):
+    """Closes the database again at the end of the request."""
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
@@ -135,6 +173,11 @@ def admin():
 
 @app.route('/add_part', methods=['POST'])
 def add_part():
+    """
+    Handles the AJAX request from the admin page to add a new part.
+    Processes form data and file uploads, inserts the new part into the database,
+    and returns the created part's data as JSON.
+    """
     if not session.get('logged_in'):
         return jsonify({'error': 'Not logged in'}), 401
 
@@ -144,6 +187,7 @@ def add_part():
     db = get_db()
     is_assembly = request.form.get('is_assembly', 0)
     try:
+        # Insert the new part into the 'parts' table.
         cur = db.execute('''
             INSERT INTO parts (barcode, description, part_number, uom, supplier_name, notes, thumbnail, is_assembly)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
@@ -152,9 +196,10 @@ def add_part():
         db.commit()
         part_id = cur.lastrowid
     except sqlite3.IntegrityError:
+        # This error occurs if the barcode (which is unique) already exists.
         return jsonify({'error': 'Barcode already exists.'}), 409
 
-    # Handle file uploads
+    # Handle file uploads associated with the new part.
     files = request.files.getlist('attachments')
     attachments_filenames = []
     for file in files:
@@ -164,11 +209,13 @@ def add_part():
             file.save(filepath)
             attachments_filenames.append(filename)
 
+            # Insert a record for each attachment into the 'attachments' table.
             db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
                        (part_id, filename, filename))
             db.commit()
 
-    # Fetch the newly created part to return it
+    # Fetch the newly created part to return it in the JSON response.
+    # This allows the frontend to dynamically update the parts table without a page reload.
     cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
     new_part = dict(cur.fetchone())
     new_part['attachments'] = ','.join(attachments_filenames)
@@ -621,30 +668,34 @@ def index():
 
 @app.route('/scanner')
 def scanner():
+    """
+    Renders the simplified scanner interface. This route is intentionally separate from
+    the main `index` route to serve a different HTML template (`scanner.html`) that is
+    optimized for older, resource-constrained devices. The backend logic for fetching
+    list data is nearly identical to the `index` route.
+    """
     db = get_db()
 
-    # Ensure there's an active list in the session
+    # Ensure there's an active list in the session. If not, default to the first list.
     if 'active_list_id' not in session:
-        # Find the first list (which is the default) and set it as active
         cur = db.execute('SELECT id FROM lists ORDER BY id LIMIT 1')
         first_list = cur.fetchone()
         if first_list:
             session['active_list_id'] = first_list['id']
         else:
-            # Handle case where database might be empty
             return "Error: No lists found in the database. Please initialize it.", 500
 
     active_list_id = session['active_list_id']
 
-    # Get all lists for the dropdown switcher
+    # Get all lists for the dropdown list switcher.
     cur = db.execute('SELECT * FROM lists ORDER BY name')
     all_lists = cur.fetchall()
 
-    # Get the details of the active list
+    # Get the details of the currently active list.
     cur = db.execute('SELECT * FROM lists WHERE id = ?', [active_list_id])
     active_list = cur.fetchone()
 
-    # Get items for the active list
+    # Get all items for the active list, joining with the parts table.
     cur = db.execute('''
         SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail, p.is_assembly
         FROM list_items li
@@ -655,6 +706,7 @@ def scanner():
 
     list_items_rows = cur.fetchall()
     list_items = []
+    # For each item, if it's an assembly, fetch its constituent components.
     for item in list_items_rows:
         item_dict = dict(item)
         if item_dict['is_assembly']:
@@ -669,16 +721,32 @@ def scanner():
             item_dict['components'] = []
         list_items.append(item_dict)
 
-    error = session.pop('error', None)
-    return render_template('scanner.html', list_items=list_items, all_lists=all_lists, active_list=active_list, error=error)
+    # Get scan status from URL parameters to pass to the template for feedback UI.
+    scan_status = {
+        "status": request.args.get('scan_status'),
+        "message": request.args.get('message'),
+        "barcode": request.args.get('barcode'),
+        "qty": request.args.get('qty')
+    }
+
+    return render_template('scanner.html', list_items=list_items, all_lists=all_lists, active_list=active_list, scan_status=scan_status)
 
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
+    """
+    Handles adding an item to the active list. This route is designed to handle
+    requests from both the main interface (as JSON) and the scanner interface
+    (as a standard form submission).
+    """
+    is_scanner_request = 'scanner' in (request.referrer or '')
+
+    # Check if the request is an AJAX call with a JSON payload.
     if request.is_json:
         data = request.get_json()
         barcode = data.get('barcode')
         quantity = data.get('quantity', 1)
         add_as_separate = data.get('add_as_separate', False)
+    # Otherwise, handle it as a traditional form submission.
     else:
         barcode = request.form.get('barcode')
         quantity = request.form.get('quantity', 1)
@@ -687,11 +755,15 @@ def add_to_list():
     active_list_id = session.get('active_list_id')
 
     if not active_list_id:
+        # This error should ideally only be seen by API clients.
         return jsonify({'error': 'No active list selected.'}), 400
     if not barcode:
-        if request.is_json:
+        if is_scanner_request:
+            return redirect(url_for('scanner', scan_status='error', message='Barcode cannot be empty.'))
+        elif request.is_json:
             return jsonify({'error': 'Barcode cannot be empty.'}), 400
         else:
+            # For form submissions from main UI, flash a message and redirect.
             flash('Barcode cannot be empty.')
             return redirect(request.referrer or url_for('index'))
 
@@ -714,9 +786,9 @@ def add_to_list():
                     new_quantity = existing_item['quantity'] + quantity
                     db.execute('UPDATE list_items SET quantity = ? WHERE id = ?', [new_quantity, existing_item['id']])
                     db.commit()
-                    # After updating, we can just return a success message or redirect
-                    if request.is_json:
-                        # For AJAX requests, we might need to return the updated list or item
+                    if is_scanner_request:
+                         return redirect(url_for('scanner', scan_status='success', barcode=part['barcode'], qty=quantity))
+                    elif request.is_json:
                         return jsonify({'success': True, 'message': 'Quantity updated.'})
                     else:
                         return redirect(request.referrer or url_for('index'))
@@ -724,7 +796,9 @@ def add_to_list():
             # If we are adding as a separate line, or if it's a new item
             cur = db.execute('INSERT INTO list_items (list_id, part_id, quantity) VALUES (?, ?, ?)', [active_list_id, part['id'], quantity])
             db.commit()
-            if request.is_json:
+            if is_scanner_request:
+                 return redirect(url_for('scanner', scan_status='success', barcode=part['barcode'], qty=quantity))
+            elif request.is_json:
                 new_item_id = cur.lastrowid
                 cur = db.execute('''
                     SELECT li.id, p.id as part_id, p.barcode, p.description, p.part_number, li.quantity, p.uom, p.supplier_name, p.thumbnail
@@ -737,13 +811,17 @@ def add_to_list():
             else:
                 return redirect(request.referrer or url_for('index'))
         except sqlite3.Error as e:
-            if request.is_json:
+            if is_scanner_request:
+                return redirect(url_for('scanner', scan_status='error', message=f'Database error: {e}'))
+            elif request.is_json:
                 return jsonify({'error': f'Database error: {e}'}), 500
             else:
                 flash(f'Database error: {e}')
                 return redirect(request.referrer or url_for('index'))
     else:
-        if request.is_json:
+        if is_scanner_request:
+            return redirect(url_for('scanner', scan_status='error', message='Barcode not found.'))
+        elif request.is_json:
             return jsonify({'error': 'Barcode not found.'}), 404
         else:
             session['error'] = 'Barcode not found.'
@@ -1022,6 +1100,12 @@ def print_list():
 
 # --- Main Execution ---
 if __name__ == '__main__':
+    # This block runs only when the script is executed directly (e.g., `python app.py`)
+    # and not when it's imported as a module.
+    # Create the necessary directories for uploads and thumbnails if they don't exist.
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['THUMBNAIL_FOLDER'], exist_ok=True)
+    # Start the Flask development server.
+    # `debug=True` enables auto-reloading and provides detailed error pages.
+    # `host='0.0.0.0'` makes the server accessible from any device on the network.
     app.run(debug=True, host='0.0.0.0')

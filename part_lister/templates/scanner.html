@@ -4,19 +4,25 @@
     <title>Part Lister - Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: sans-serif; margin: 20px; }
+        body { font-family: sans-serif; margin: 20px; transition: background-color 0.2s; }
         h1, h2 { margin-top: 0; }
         form { margin-bottom: 20px; }
-        input[type="text"] { width: 150px; padding: 5px; }
+        input[type="text"], input[type="number"] { width: 150px; padding: 5px; }
         input[type="submit"], button { padding: 5px 10px; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .error { color: red; }
+        .status-message { padding: 10px; margin-bottom: 15px; border: 1px solid; }
+        .status-success { background-color: #dff0d8; border-color: #d6e9c6; color: #3c763d; }
+        .status-error { background-color: #f2dede; border-color: #ebccd1; color: #a94442; font-weight: bold; }
+        .flash-success { background-color: #dff0d8; }
+        .flash-error { background-color: #f2dede; }
     </style>
 </head>
 <body>
 
     <h1>Part List - Scanner Interface</h1>
+
+    <div id="status-container"></div>
 
     <h2>Current List: {{ active_list.name }}</h2>
 
@@ -35,26 +41,90 @@
     <hr>
 
     <h2>Add Item</h2>
-    {% if error %}
-        <p class="error">{{ error }}</p>
-    {% endif %}
-    <form action="{{ url_for('add_to_list') }}" method="post">
+    <form id="add-item-form" action="{{ url_for('add_to_list') }}" method="post">
         <label for="barcode">Barcode:</label><br>
-        <input type="text" name="barcode" id="barcode"><br><br>
+        <input type="text" name="barcode" id="barcode" autofocus><br><br>
         <label for="quantity">Quantity:</label><br>
-        <input type="text" name="quantity" id="quantity" placeholder="Quantity"><br><br>
+        <input type="number" name="quantity" id="quantity" value="1" style="width: 60px;"><br><br>
         <input type="checkbox" name="add_as_separate" id="add_as_separate">
         <label for="add_as_separate">Add as separate line</label><br><br>
         <input type="submit" value="Add Item">
+        <button type="reset">Clear</button>
     </form>
 
     <script>
-        document.getElementById('barcode').addEventListener('keydown', function(event) {
-            if (event.keyCode === 13) {
-                event.preventDefault();
-                document.getElementById('quantity').focus();
+        // All JavaScript is placed at the end of the body for faster perceived page load.
+
+        // --- Cross-browser utility ---
+        function addEvent(element, eventName, callback) {
+            if (element.addEventListener) {
+                element.addEventListener(eventName, callback, false);
+            } else if (element.attachEvent) {
+                element.attachEvent('on' + eventName, callback);
             }
-        });
+        }
+
+        // --- Page Load Logic ---
+        function handlePageLoad() {
+            // Parse URL parameters
+            var params = {};
+            var parts = window.location.search.substring(1).split('&');
+            for (var i = 0; i < parts.length; i++) {
+                var nv = parts[i].split('=');
+                if (nv.length === 2) {
+                    params[nv[0]] = decodeURIComponent(nv[1].replace(/\+/g, ' '));
+                }
+            }
+
+            var statusContainer = document.getElementById('status-container');
+            if (params.scan_status && statusContainer) {
+                var statusClass = '';
+                var flashClass = '';
+                var message = '';
+
+                if (params.scan_status === 'success') {
+                    statusClass = 'status-success';
+                    flashClass = 'flash-success';
+                    message = 'Last Scanned: ' + params.barcode + ' (Qty: ' + params.qty + ')';
+                } else if (params.scan_status === 'error') {
+                    statusClass = 'status-error';
+                    flashClass = 'flash-error';
+                    message = 'Error: ' + params.message;
+                }
+
+                if (message) {
+                    statusContainer.innerHTML = '<div class="status-message ' + statusClass + '">' + message + '</div>';
+                    document.body.className = flashClass;
+                    setTimeout(function() {
+                        document.body.className = '';
+                    }, 500); // Flash duration
+                }
+            }
+        }
+
+        // --- Event Binding ---
+        var barcodeInput = document.getElementById('barcode');
+        var quantityInput = document.getElementById('quantity');
+
+        if (barcodeInput && quantityInput) {
+            addEvent(barcodeInput, 'keydown', function(event) {
+                event = event || window.event;
+                if (event.keyCode === 13) {
+                    if (event.preventDefault) {
+                        event.preventDefault();
+                    } else {
+                        event.returnValue = false;
+                    }
+                    quantityInput.focus();
+                    if (quantityInput.select) {
+                        quantityInput.select();
+                    }
+                }
+            });
+        }
+
+        // --- Run on page load ---
+        handlePageLoad();
     </script>
 
     <hr>
@@ -112,9 +182,11 @@
     </table>
 
     <script>
+        // This script is separate to ensure it's not affected by the main script block.
         function toggleAssembly(className) {
             var rows = document.getElementsByClassName(className);
             var indicator = document.getElementById(className + '-indicator');
+            if (!rows.length) return;
             var isHidden = rows[0].style.display === 'none';
             for (var i = 0; i < rows.length; i++) {
                 rows[i].style.display = isHidden ? '' : 'none';
