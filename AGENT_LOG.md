@@ -6,7 +6,7 @@ This log file tracks changes made to the codebase by the AI agent. It includes t
 
 ### 2025-09-16: Initial Log Setup
 
-**Change:** Created the `agent_log.md` file.
+**Change:** Created the `AGENT_LOG.md` file.
 
 **Reasoning:** The purpose of this file is to maintain a running log of all changes made to the codebase. This will help with project continuity and provide a clear record of the agent's actions and decision-making process. The initial entry explains the file's purpose.
 
