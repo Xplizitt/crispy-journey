@@ -19,22 +19,6 @@
     <h1>Part List - Scanner Interface</h1>
 
     <h2>Current List: {{ active_list.name }}</h2>
-
-    <div>
-        <form action="{{ url_for('create_list') }}" method="post" style="display: inline;">
-            <input type="text" name="list_name" placeholder="New list name...">
-            <input type="submit" value="Create List">
-        </form>
-        <select name="switch_to_list" onchange="window.location.href = '/switch_list/' + this.value;">
-            {% for list in all_lists %}
-                <option value="{{ list.id }}" {% if list.id == active_list.id %}selected{% endif %}>{{ list.name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <hr>
-
-    <h2>Add Item</h2>
     {% if error %}
         <p class="error">{{ error }}</p>
     {% endif %}
@@ -49,12 +33,19 @@
     </form>
 
     <script>
+        window.onload = function() {
+            document.getElementById('barcode').focus();
+        };
+
         document.getElementById('barcode').addEventListener('keydown', function(event) {
             if (event.keyCode === 13) {
-                event.preventDefault();
+                event.preventDefault(); // Prevent form submission
                 document.getElementById('quantity').focus();
             }
         });
+
+        // The 'quantity' input will submit the form natively on Enter if it's the last input
+        // or if there's a submit button.
     </script>
 
     <hr>
