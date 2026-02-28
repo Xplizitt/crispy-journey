@@ -93,15 +93,19 @@
                     <td><a href="{{ url_for('part_view', part_id=item.part_id, origin='index') }}">{{ item['part_number'] }}</a></td>
                     <td>{{ item['uom'] }}</td>
                     <td>{{ item['supplier_name'] }}</td>
-                    <td>{{ item['quantity'] }}</td>
                     <td>
-                        <a href="{{ url_for('edit_list_item', item_id=item['id']) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                        <a href="{{ url_for('delete_list_item', item_id=item['id']) }}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">{{ item['quantity'] }}</span>
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('edit_list_item', item_id=item['id']) }}" class="btn btn-sm btn-outline-primary" title="Edit Quantity"><i class="bi bi-pencil"></i></a>
+                            <a href="{{ url_for('delete_list_item', item_id=item['id']) }}" class="btn btn-sm btn-outline-danger" title="Remove from List"><i class="bi bi-trash"></i></a>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8">No items in list.</td>
+                    <td colspan="8" class="text-center py-4 text-muted">No items in list. Start scanning or adding manually.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -109,7 +113,6 @@
     </div>
 
     <div class="mt-3">
-        <a href="{{ url_for('print_list') }}" class="btn btn-info" target="_blank">Print List</a>
-        <a href="{{ url_for('admin') }}" class="btn btn-secondary">Manage Parts</a>
+        <a href="{{ url_for('print_list') }}" class="btn btn-info" target="_blank"><i class="bi bi-printer me-1"></i> Print List</a>
     </div>
 {% endblock %}
