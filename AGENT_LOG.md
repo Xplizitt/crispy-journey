@@ -64,3 +64,17 @@ The BOM structure is a many-to-many relationship using a junction table (`bom_co
 ### Fix Admin Login
 **The Change:** Updated `app.py` to correctly provide a default value of 'admin' to `app.config['ADMIN_PASSWORD']` if the `ADMIN_PASSWORD` environment variable is not explicitly set. Updated `README.md` to document this default value.
 **The Reasoning:** The user reported being unable to login to manage parts. Inspection revealed that if `os.environ.get('ADMIN_PASSWORD')` is missing, `app.config['ADMIN_PASSWORD']` evaluates to `None`, making it impossible to authenticate. Defaulting to 'admin' fixes this and aligns with previous comments in the codebase.
+
+## Image Gallery Polish & Feature Expansion
+- **part_lister/routes/admin.py**:
+  - Updated `/gallery` route to support search queries and pagination using `LIMIT` and `OFFSET`.
+  - Generated thumbnails natively upon upload.
+  - Created `/gallery_bulk_edit` route to handle bulk deletion and unlinking of assets.
+  - Updated file upload logic within `/add_part` and `/edit_part` routes to auto-generate thumbnails using the `create_thumbnail` utility upon file save.
+- **part_lister/templates/gallery.html**:
+  - Overhauled UI to include search bar, pagination controls, and bulk management dropdown (wrapped in a form).
+  - Designed the visual representation for checkboxes directly over gallery cards.
+  - Implemented the context usage indicators showing linked part numbers or if the image is orphaned.
+  - Refactored grid elements into anchor tags to toggle a new Bootstrap Modal to display images in a lightbox component.
+- **generate_thumbnails.py**:
+  - Added a one-time migration script to process all existing images and natively generate thumbnail versions of them to reduce server traffic for legacy assets.
