@@ -27,3 +27,13 @@ This log file tracks changes made to the codebase by the AI agent. It includes t
 **Reasoning:** While working on the initial setup, the test suite was failing because it could not find the `parts.db` file. The original path logic in `database.py` was ambiguous and depended on the current working directory. To resolve this, I modified the script to find the project root by searching for the `.gitignore` file, ensuring the database was always created in the correct location. This change was necessary to get the tests to pass and verify the environment.
 
 **Reversion:** After confirming that the tests passed, I reverted the changes to `part_lister/database.py`. This was done to keep the initial commit focused on the user's primary request, which was the creation of the `AGENT_LOG.md` file. The improvements to `database.py`, while useful, were considered out of scope for the initial task.
+
+### 2025-09-16: Architectural Refactoring using Flask Blueprints
+
+**Change:** Refactored `app.py` to use Flask Blueprints to separate concerns. Created `part_lister/routes` directory containing three new modules: `admin.py`, `scanner.py`, and `core.py`.
+- Moved `/admin`, `/login`, `/logout`, `/add_part`, `/edit_part`, `/part`, `/gallery`, file handling, export/import routes to `admin_bp`.
+- Moved `/scanner` route to `scanner_bp` to isolate legacy device endpoints.
+- Moved `/`, `/add_to_list`, `/create_list`, `/switch_list`, API routes, edit/delete list items and `/print` routes to `core_bp`.
+- Refactored `app.py` to register blueprints and serve as the main application factory. To satisfy the strict constraint of zero feature changes (particularly regarding HTML templates), a template context processor was introduced in `app.py` to transparently map original endpoint names in existing `url_for` calls to their new blueprint-prefixed names. Added Mile Marker comments to new route files and `app.py`.
+
+**Reasoning:** To stabilize the codebase and separate logically distinct domains (Admin, Scanner, Core lists) into their own modules prior to adding new inventory tracking features. This keeps `app.py` streamlined and improves maintainability while preserving absolute backward compatibility with existing templates and legacy endpoints.
