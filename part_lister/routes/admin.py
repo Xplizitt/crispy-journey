@@ -229,7 +229,10 @@ def edit_part(part_id):
     ''', [part_id])
     bom_components = cur.fetchall()
 
-    return render_template('edit_part.html', part=part, attachments=attachments, bom_components=bom_components)
+    cur = db.execute('SELECT barcode, description FROM parts ORDER BY description')
+    all_parts = cur.fetchall()
+
+    return render_template('edit_part.html', part=part, attachments=attachments, bom_components=bom_components, all_parts=all_parts)
 
 @admin_bp.route('/part/<int:part_id>')
 def part_view(part_id):

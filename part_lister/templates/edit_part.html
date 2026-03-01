@@ -141,7 +141,12 @@
             <h4>Add Component</h4>
             <form method="post" action="{{ url_for('admin_bp.add_bom_component', part_id=part['id']) }}" class="row g-3 align-items-center">
                 <div class="col-auto">
-                    <input type="text" class="form-control" name="child_barcode" placeholder="Child Barcode" required>
+                    <input type="text" class="form-control" name="child_barcode" list="partList" placeholder="Child Barcode" autocomplete="off" required>
+                    <datalist id="partList">
+                        {% for p in all_parts %}
+                        <option value="{{ p['barcode'] }}">{{ p['description'] }}</option>
+                        {% endfor %}
+                    </datalist>
                 </div>
                 <div class="col-auto">
                     <input type="number" step="0.01" class="form-control" name="quantity_required" placeholder="Qty Required (e.g., 1.5)" required>
