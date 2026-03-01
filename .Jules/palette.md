@@ -1,0 +1,3 @@
+## 2025-09-17 - Destructive Action Confirmation
+**Learning:** It is crucial to ensure consistent confirmation dialogs for destructive actions (like deleting items or bulk deleting) across both modern and legacy interfaces, such as the `scanner.html` for older devices. Simple `confirm()` dialogs are universally supported.
+**Action:** Always verify that both modern API-driven views and legacy form-submitted views include identical UX safety checks for any data destruction.

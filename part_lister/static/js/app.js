@@ -285,7 +285,7 @@
                 <td>${item.quantity}</td>
                 <td>
                     <a href="/edit_list_item/${item.id}" class="btn btn-sm btn-outline-primary">Edit</a>
-                    <a href="/delete_list_item/${item.id}" class="btn btn-sm btn-outline-danger">Delete</a>
+                    <a href="/delete_list_item/${item.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
                 </td>
             `;
             tableBody.appendChild(newRow);
