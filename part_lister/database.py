@@ -35,7 +35,8 @@ def init_db_migrations(db):
         'category': 'TEXT',
         'location': 'TEXT',
         'stock_quantity': 'INTEGER DEFAULT 0',
-        'reorder_level': 'INTEGER DEFAULT 0'
+        'reorder_level': 'INTEGER DEFAULT 0',
+        'part_type': 'TEXT DEFAULT \'Purchased\''
     }
 
     c.execute("PRAGMA table_info(parts)")
@@ -57,6 +58,19 @@ def init_db_migrations(db):
             details TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE CASCADE
+        )
+    ''')
+
+
+    # Ensure bom_components table exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS bom_components (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            parent_part_id INTEGER NOT NULL,
+            child_part_id INTEGER NOT NULL,
+            quantity_required REAL NOT NULL,
+            FOREIGN KEY (parent_part_id) REFERENCES parts (id) ON DELETE CASCADE,
+            FOREIGN KEY (child_part_id) REFERENCES parts (id)
         )
     ''')
 
@@ -85,6 +99,7 @@ def init_db():
             location TEXT,
             stock_quantity INTEGER DEFAULT 0,
             reorder_level INTEGER DEFAULT 0,
+            part_type TEXT DEFAULT 'Purchased',
             thumbnail TEXT,
             notes TEXT
         )
@@ -121,6 +136,18 @@ def init_db():
             filename TEXT NOT NULL,
             filepath TEXT NOT NULL,
             FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE SET NULL
+        )
+    ''')
+
+        # Create bom_components table
+    c.execute('''
+        CREATE TABLE bom_components (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            parent_part_id INTEGER NOT NULL,
+            child_part_id INTEGER NOT NULL,
+            quantity_required REAL NOT NULL,
+            FOREIGN KEY (parent_part_id) REFERENCES parts (id) ON DELETE CASCADE,
+            FOREIGN KEY (child_part_id) REFERENCES parts (id)
         )
     ''')
 
