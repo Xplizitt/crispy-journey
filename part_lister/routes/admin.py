@@ -36,7 +36,7 @@ def login():
     error = None
     if request.method == 'POST':
         # ADMIN_PASSWORD needs to be accessed, assuming it's admin. Better to put in app config or local
-        if request.form['password'] == 'admin':
+        if request.form['password'] == app.config['ADMIN_PASSWORD']:
             session['logged_in'] = True
             flash('You were logged in')
             return redirect(url_for('admin_bp.admin'))
