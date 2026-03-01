@@ -130,6 +130,13 @@ def add_part():
                     filename = secure_filename(file.filename)
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     file.save(filepath)
+
+                    if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                        thumb_filename = f"thumb_gallery_{filename}"
+                        thumb_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
+                        from part_lister.app import create_thumbnail
+                        create_thumbnail(filepath, thumb_path)
+
                     db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
                                [part_id, filename, filename])
                     db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
@@ -200,6 +207,12 @@ def edit_part(part_id):
                         filename = secure_filename(file.filename)
                         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                         file.save(filepath)
+
+                        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                            thumb_filename = f"thumb_gallery_{filename}"
+                            thumb_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
+                            create_thumbnail(filepath, thumb_path)
+
                         db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
                                    [part_id, filename, filename])
                         db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
@@ -603,6 +616,7 @@ def gallery():
         return redirect(url_for('admin_bp.login'))
 
     db = get_db()
+    from part_lister.app import create_thumbnail
 
     if request.method == 'POST':
         if 'files' not in request.files:
@@ -616,19 +630,55 @@ def gallery():
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
+
+                # Check if file is an image and generate thumbnail
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                    thumb_filename = f"thumb_gallery_{filename}"
+                    thumb_path = os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename)
+                    create_thumbnail(filepath, thumb_path)
+
                 db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
                            (None, filename, filename))
         db.commit()
         flash(f'Successfully uploaded {len(files)} files.')
         return redirect(url_for('admin_bp.gallery'))
 
-    cur = db.execute('''
-        SELECT id, filename FROM attachments
-        WHERE filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.gif'
-        ORDER BY id DESC
-    ''')
+    # Pagination and Search Parameters
+    page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('search', '').strip()
+    per_page = 24
+    offset = (page - 1) * per_page
+
+    # Base query
+    base_query = '''
+        FROM attachments a
+        LEFT JOIN parts p ON a.part_id = p.id
+        WHERE (a.filename LIKE '%.jpg' OR a.filename LIKE '%.jpeg' OR a.filename LIKE '%.png' OR a.filename LIKE '%.gif')
+    '''
+    params = []
+
+    if search_query:
+        base_query += ' AND (a.filename LIKE ? OR p.part_number LIKE ? OR p.description LIKE ?)'
+        wildcard = f'%{search_query}%'
+        params.extend([wildcard, wildcard, wildcard])
+
+    # Count total for pagination
+    cur = db.execute('SELECT COUNT(*) as total ' + base_query, params)
+    total_items = cur.fetchone()['total']
+    total_pages = (total_items + per_page - 1) // per_page
+
+    # Fetch paginated results
+    fetch_query = f'''
+        SELECT a.id, a.filename, a.part_id, p.part_number
+        {base_query}
+        ORDER BY a.id DESC
+        LIMIT ? OFFSET ?
+    '''
+    fetch_params = params + [per_page, offset]
+    cur = db.execute(fetch_query, fetch_params)
     images = cur.fetchall()
-    return render_template('gallery.html', images=images)
+
+    return render_template('gallery.html', images=images, page=page, total_pages=total_pages, search_query=search_query)
 
 @admin_bp.route('/delete_image/<int:image_id>')
 def delete_image(image_id):
@@ -783,3 +833,63 @@ def build_part(part_id):
         flash(f'An error occurred during build: {e}', 'error')
 
     return redirect(url_for('admin_bp.part_view', part_id=part_id))
+
+@admin_bp.route('/gallery_bulk_edit', methods=['POST'])
+def gallery_bulk_edit():
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_bp.login'))
+
+    action = request.form.get('action')
+    selected_images = request.form.getlist('selected_images')
+
+    if not selected_images:
+        flash('No images selected.', 'error')
+        return redirect(url_for('admin_bp.gallery'))
+
+    db = get_db()
+    success_count = 0
+
+    if action == 'delete':
+        for image_id in selected_images:
+            cur = db.execute('SELECT filename FROM attachments WHERE id = ?', [image_id])
+            image = cur.fetchone()
+            if image:
+                filename = image['filename']
+
+                # Check if this image is used as a thumbnail
+                thumb_filename_pattern = f"%thumb_%_{filename}"
+                cur = db.execute('SELECT COUNT(*) as count FROM parts WHERE thumbnail LIKE ?', [thumb_filename_pattern])
+                usage = cur.fetchone()
+                if usage['count'] > 0:
+                    flash(f"Cannot delete image '{filename}'. It is used as a thumbnail.", 'error')
+                    continue
+
+                # Delete original file
+                try:
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                except OSError as e:
+                    print(f"Error deleting file {filename}: {e}")
+
+                # Delete gallery thumbnail
+                try:
+                    thumb_filename = f"thumb_gallery_{filename}"
+                    os.remove(os.path.join(app.config['THUMBNAIL_FOLDER'], thumb_filename))
+                except OSError as e:
+                    print(f"Error deleting thumbnail {thumb_filename}: {e}")
+
+                db.execute('DELETE FROM attachments WHERE id = ?', [image_id])
+                success_count += 1
+
+        db.commit()
+        if success_count > 0:
+            flash(f'Successfully deleted {success_count} image(s).')
+
+    elif action == 'unlink':
+        for image_id in selected_images:
+            db.execute('UPDATE attachments SET part_id = NULL WHERE id = ?', [image_id])
+            success_count += 1
+        db.commit()
+        if success_count > 0:
+            flash(f'Successfully unlinked {success_count} image(s).')
+
+    return redirect(url_for('admin_bp.gallery'))
