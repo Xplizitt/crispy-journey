@@ -45,3 +45,4 @@ A simple web application for building part lists, designed with a /scanner page 
 ## Environment Variables
 
 *   **`ADMIN_PASSWORD`**: Required for accessing the admin interface (`/admin`). Set this variable in your environment before running the application.
+*   **Default Password:** If the `ADMIN_PASSWORD` environment variable is not set, the default password is `admin`.

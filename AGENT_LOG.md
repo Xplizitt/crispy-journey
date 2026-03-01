@@ -60,3 +60,7 @@ The BOM structure is a many-to-many relationship using a junction table (`bom_co
 ### Update README.md again
 **The Change:** Updated README.md to include documentation for environment variables.
 **The Reasoning:** The user requested environment variables to be documented.
+
+### Fix Admin Login
+**The Change:** Updated `app.py` to correctly provide a default value of 'admin' to `app.config['ADMIN_PASSWORD']` if the `ADMIN_PASSWORD` environment variable is not explicitly set. Updated `README.md` to document this default value.
+**The Reasoning:** The user reported being unable to login to manage parts. Inspection revealed that if `os.environ.get('ADMIN_PASSWORD')` is missing, `app.config['ADMIN_PASSWORD']` evaluates to `None`, making it impossible to authenticate. Defaulting to 'admin' fixes this and aligns with previous comments in the codebase.
