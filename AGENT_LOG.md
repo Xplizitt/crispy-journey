@@ -56,3 +56,7 @@ The BOM structure is a many-to-many relationship using a junction table (`bom_co
 ### Update README.md
 **The Change:** Updated README.md to include setup and running instructions.
 **The Reasoning:** The user requested the README.md to be updated with instructions for running the application.
+
+### Update README.md again
+**The Change:** Updated README.md to include documentation for environment variables.
+**The Reasoning:** The user requested environment variables to be documented.

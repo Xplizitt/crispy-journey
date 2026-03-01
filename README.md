@@ -41,3 +41,7 @@ A simple web application for building part lists, designed with a /scanner page 
     *   **Main Interface:** `http://localhost:5000/`
     *   **Admin Interface:** `http://localhost:5000/admin` (Password protected)
     *   **Scanner Interface:** `http://localhost:5000/scanner`
+
+## Environment Variables
+
+*   **`ADMIN_PASSWORD`**: Required for accessing the admin interface (`/admin`). Set this variable in your environment before running the application.
