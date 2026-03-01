@@ -223,16 +223,9 @@ def edit_part(part_id):
 
         try:
             stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
-        except ValueError:
-            flash('Error: Stock Quantity must be an integer.')
-            cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
-            part = cur.fetchone()
-            return render_template('edit_part.html', part=part)
-
-        try:
             reorder_level = int(request.form.get('reorder_level', 0) or 0)
         except ValueError:
-            flash('Error: Reorder Level must be an integer.')
+            flash('Error: Stock Quantity and Reorder Level must be integers.')
             cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
             part = cur.fetchone()
             return render_template('edit_part.html', part=part)
