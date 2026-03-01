@@ -98,7 +98,7 @@ def init_db():
             category TEXT,
             location TEXT,
             stock_quantity INTEGER DEFAULT 0,
-                        reorder_level INTEGER DEFAULT 0,
+            reorder_level INTEGER DEFAULT 0,
             part_type TEXT DEFAULT 'Purchased',
             thumbnail TEXT,
             notes TEXT
