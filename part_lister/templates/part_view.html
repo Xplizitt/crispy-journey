@@ -41,6 +41,22 @@
                         <td>{{ part['supplier_name'] }}</td>
                     </tr>
                     <tr>
+                        <th scope="row">Category</th>
+                        <td>{{ part['category'] if part['category'] else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Location</th>
+                        <td>{{ part['location'] if part['location'] else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Stock Quantity</th>
+                        <td class="{% if part['reorder_level'] > 0 and part['stock_quantity'] <= part['reorder_level'] %}text-danger fw-bold{% endif %}">{{ part['stock_quantity'] }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Reorder Level</th>
+                        <td>{{ part['reorder_level'] }}</td>
+                    </tr>
+                    <tr>
                         <th scope="row">Notes</th>
                         <td>{{ part['notes'] }}</td>
                     </tr>
@@ -103,5 +119,31 @@
         </table>
     {% else %}
         <p>No files attached.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>History / Audit Trail</h2>
+    {% if audit_logs %}
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                    <tr>
+                        <td>{{ log.timestamp }}</td>
+                        <td>{{ log.action }}</td>
+                        <td>{{ log.details }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No history available.</p>
     {% endif %}
 {% endblock %}

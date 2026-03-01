@@ -12,6 +12,14 @@ This log file tracks changes made to the codebase by the AI agent. It includes t
 
 ---
 
+### 2026-03-01: Added Category, Location, Stock, and Audit Trail
+
+**Change:** Added new columns (`category`, `location`, `stock_quantity`, `reorder_level`) to the `parts` table and created a new `audit_log` table. Updated `app.py` and UI templates to handle these fields, enforce input validation on numeric inputs, and highlight low stock items in the admin table.
+**Reasoning:** To expand the platform with industry-standard features (categories/tags, location/bin tracking, low stock alerts, audit trail history, and enhanced search filtering).
+**Note:** Included `init_db_migrations` in `database.py` to seamlessly execute `ALTER TABLE` and `CREATE TABLE IF NOT EXISTS` commands so existing databases are safely upgraded upon running the app without wiping data.
+
+---
+
 ### 2025-09-16: Debugging Database Initialization
 
 **Change:** Temporarily modified `part_lister/database.py` to robustly locate the project root and print debugging information.

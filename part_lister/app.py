@@ -33,6 +33,11 @@ from flask import Flask, render_template, request, redirect, url_for, session, g
 from werkzeug.utils import secure_filename
 from PIL import Image
 
+try:
+    from part_lister.database import init_db_migrations
+except ImportError:
+    from database import init_db_migrations
+
 app = Flask(__name__)
 
 # --- Configuration ---
@@ -70,6 +75,10 @@ def get_db():
     if not hasattr(g, 'sqlite_db'):
         g.sqlite_db = sqlite3.connect(db_path)
         g.sqlite_db.row_factory = sqlite3.Row
+
+        # Apply any necessary schema migrations for new features
+        init_db_migrations(g.sqlite_db)
+
     return g.sqlite_db
 
 @app.teardown_appcontext
@@ -107,6 +116,8 @@ def admin():
     filter_description = request.args.get('filter_description')
     filter_supplier = request.args.get('filter_supplier')
     filter_part_number = request.args.get('filter_part_number')
+    filter_category = request.args.get('filter_category')
+    filter_location = request.args.get('filter_location')
 
     query = 'SELECT p.*, GROUP_CONCAT(a.filename) as attachments FROM parts p LEFT JOIN attachments a ON p.id = a.part_id'
     conditions = []
@@ -121,6 +132,12 @@ def admin():
     if filter_part_number:
         conditions.append('p.part_number LIKE ?')
         params.append(f'%{filter_part_number}%')
+    if filter_category:
+        conditions.append('p.category LIKE ?')
+        params.append(f'%{filter_category}%')
+    if filter_location:
+        conditions.append('p.location LIKE ?')
+        params.append(f'%{filter_location}%')
 
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
@@ -141,12 +158,24 @@ def add_part():
         return jsonify({'error': 'Barcode and Description are required.'}), 400
 
     db = get_db()
+
+    try:
+        stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
+    except ValueError:
+        return jsonify({'error': 'Stock Quantity must be an integer.'}), 400
+
+    try:
+        reorder_level = int(request.form.get('reorder_level', 0) or 0)
+    except ValueError:
+        return jsonify({'error': 'Reorder Level must be an integer.'}), 400
+
     try:
         cur = db.execute('''
-            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, notes, thumbnail)
-            VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, notes, thumbnail)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             [request.form.get('barcode'), request.form.get('description'), request.form.get('part_number'),
-             request.form.get('uom'), request.form.get('supplier_name'), request.form.get('notes'), None])
+             request.form.get('uom'), request.form.get('supplier_name'), request.form.get('category'),
+             request.form.get('location'), stock_quantity, reorder_level, request.form.get('notes'), None])
         db.commit()
         part_id = cur.lastrowid
     except sqlite3.IntegrityError:
@@ -165,6 +194,11 @@ def add_part():
             db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
                        (part_id, filename, filename))
             db.commit()
+
+        # Audit log
+        db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
+                   (part_id, 'Created', f'Part added via {"UI" if not request.is_json else "API"}.'))
+        db.commit()
 
     # Fetch the newly created part to return it
     cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
@@ -188,13 +222,40 @@ def edit_part(part_id):
             return render_template('edit_part.html', part=part)
 
         try:
+            stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
+            reorder_level = int(request.form.get('reorder_level', 0) or 0)
+        except ValueError:
+            flash('Error: Stock Quantity and Reorder Level must be integers.')
+            cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+            part = cur.fetchone()
+            return render_template('edit_part.html', part=part)
+
+        try:
+            # Fetch old part for audit diff
+            cur = db.execute('SELECT stock_quantity, location FROM parts WHERE id = ?', [part_id])
+            old_part = cur.fetchone()
+
             db.execute('''
-                UPDATE parts SET barcode = ?, description = ?, part_number = ?, uom = ?, supplier_name = ?, notes = ?
+                UPDATE parts SET barcode = ?, description = ?, part_number = ?, uom = ?, supplier_name = ?, category = ?, location = ?, stock_quantity = ?, reorder_level = ?, notes = ?
                 WHERE id = ?''',
                 [request.form['barcode'], request.form['description'], request.form['part_number'],
-                 request.form['uom'], request.form['supplier_name'], request.form['notes'], part_id])
+                 request.form['uom'], request.form['supplier_name'], request.form.get('category'),
+                 request.form.get('location'), stock_quantity, reorder_level, request.form['notes'], part_id])
             db.commit()
             flash('Part was successfully updated')
+
+            details = []
+            if old_part:
+                if old_part['stock_quantity'] != stock_quantity:
+                    details.append(f"Stock changed from {old_part['stock_quantity']} to {stock_quantity}.")
+                if old_part['location'] != request.form.get('location'):
+                    details.append(f"Location changed from '{old_part['location']}' to '{request.form.get('location')}'.")
+
+            audit_details = " ".join(details) if details else "Part details updated."
+            db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
+                       (part_id, 'Updated', audit_details.strip()))
+            db.commit()
+
         except sqlite3.IntegrityError:
             flash('Error: That barcode already exists.')
             cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
@@ -249,7 +310,10 @@ def part_view(part_id):
         else:
             file_attachments.append(attachment)
 
-    return render_template('part_view.html', part=part, image_attachments=image_attachments, file_attachments=file_attachments, origin=origin)
+    cur = db.execute('SELECT * FROM audit_log WHERE part_id = ? ORDER BY timestamp DESC', [part_id])
+    audit_logs = cur.fetchall()
+
+    return render_template('part_view.html', part=part, image_attachments=image_attachments, file_attachments=file_attachments, origin=origin, audit_logs=audit_logs)
 
 @app.route('/set_thumbnail/<int:part_id>/<int:attachment_id>')
 def set_thumbnail(part_id, attachment_id):
@@ -310,6 +374,12 @@ def delete_attachment(attachment_id):
 
 
         db.execute('DELETE FROM attachments WHERE id = ?', [attachment_id])
+
+        # Log deletion if part still exists
+        if attachment['part_id']:
+             db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
+                       (attachment['part_id'], 'Attachment Deleted', f"Deleted file: {attachment['filename']}"))
+
         db.commit()
         flash('Attachment was successfully deleted')
     else:
@@ -457,8 +527,10 @@ def export_parts():
     filter_description = request.args.get('filter_description')
     filter_supplier = request.args.get('filter_supplier')
     filter_part_number = request.args.get('filter_part_number')
+    filter_category = request.args.get('filter_category')
+    filter_location = request.args.get('filter_location')
 
-    query = 'SELECT barcode, description, part_number, uom, supplier_name FROM parts'
+    query = 'SELECT barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level FROM parts'
     conditions = []
     params = []
 
@@ -471,6 +543,12 @@ def export_parts():
     if filter_part_number:
         conditions.append('part_number LIKE ?')
         params.append(f'%{filter_part_number}%')
+    if filter_category:
+        conditions.append('category LIKE ?')
+        params.append(f'%{filter_category}%')
+    if filter_location:
+        conditions.append('location LIKE ?')
+        params.append(f'%{filter_location}%')
 
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
@@ -483,9 +561,9 @@ def export_parts():
     # Generate CSV
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Barcode', 'Description', 'Part Number', 'UOM', 'Supplier Name'])
+    writer.writerow(['Barcode', 'Description', 'Part Number', 'UOM', 'Supplier Name', 'Category', 'Location', 'Stock Quantity', 'Reorder Level'])
     for part in parts:
-        writer.writerow([part['barcode'], part['description'], part['part_number'], part['uom'], part['supplier_name']])
+        writer.writerow([part['barcode'], part['description'], part['part_number'], part['uom'], part['supplier_name'], part['category'], part['location'], part['stock_quantity'], part['reorder_level']])
     output.seek(0)
 
     return Response(output,
@@ -511,17 +589,34 @@ def import_parts():
         imported_count = 0
         skipped_count = 0
         for row in csv_input:
-            if len(row) < 5:
+            if len(row) < 2: # At least barcode and description
                 continue
-            barcode, description, part_number, uom, supplier_name = row[:5] # Take the first 5 columns
+
+            # Pad row if missing columns
+            while len(row) < 9:
+                row.append('')
+
+            barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level = row[:9]
+
             if not barcode or not description:
                 skipped_count += 1
                 continue
+
+            try:
+                sq = int(stock_quantity) if stock_quantity else 0
+            except ValueError:
+                sq = 0
+
+            try:
+                rl = int(reorder_level) if reorder_level else 0
+            except ValueError:
+                rl = 0
+
             try:
                 db.execute('''
-                    INSERT INTO parts (barcode, description, part_number, uom, supplier_name)
-                    VALUES (?, ?, ?, ?, ?)''',
-                    (barcode, description, part_number, uom, supplier_name))
+                    INSERT INTO parts (barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (barcode, description, part_number, uom, supplier_name, category, location, sq, rl))
                 db.commit()
                 imported_count += 1
             except sqlite3.IntegrityError:

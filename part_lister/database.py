@@ -23,6 +23,46 @@ _basedir = os.path.abspath(os.path.dirname(__file__))
 # Define the path for the database file in the project root directory
 DATABASE_PATH = os.path.join(_basedir, '..', 'parts.db')
 
+def init_db_migrations(db):
+    """
+    Applies incremental schema changes to an existing database.
+    This avoids dropping the database in production.
+    """
+    c = db.cursor()
+
+    # Ensure parts table has new columns
+    columns_to_add = {
+        'category': 'TEXT',
+        'location': 'TEXT',
+        'stock_quantity': 'INTEGER DEFAULT 0',
+        'reorder_level': 'INTEGER DEFAULT 0'
+    }
+
+    c.execute("PRAGMA table_info(parts)")
+    existing_columns = [row[1] for row in c.fetchall()]
+
+    for col_name, col_type in columns_to_add.items():
+        if col_name not in existing_columns:
+            try:
+                c.execute(f"ALTER TABLE parts ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError as e:
+                print(f"Migration error (could be expected if column exists): {e}")
+
+    # Ensure audit_log table exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            part_id INTEGER,
+            action TEXT NOT NULL,
+            details TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE CASCADE
+        )
+    ''')
+
+    db.commit()
+
+
 def init_db():
     # If the database file already exists, remove it to start fresh.
     if os.path.exists(DATABASE_PATH):
@@ -41,6 +81,10 @@ def init_db():
             part_number TEXT,
             uom TEXT,
             supplier_name TEXT,
+            category TEXT,
+            location TEXT,
+            stock_quantity INTEGER DEFAULT 0,
+            reorder_level INTEGER DEFAULT 0,
             thumbnail TEXT,
             notes TEXT
         )
@@ -77,6 +121,18 @@ def init_db():
             filename TEXT NOT NULL,
             filepath TEXT NOT NULL,
             FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE SET NULL
+        )
+    ''')
+
+    # Create audit_log table
+    c.execute('''
+        CREATE TABLE audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            part_id INTEGER,
+            action TEXT NOT NULL,
+            details TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE CASCADE
         )
     ''')
 
