@@ -111,7 +111,7 @@
     <hr>
 
     <h2>Existing Parts</h2>
-    <form action="{{ url_for('bulk_edit') }}" method="post" id="bulk-edit-form">
+    <form action="{{ url_for('bulk_edit') }}" method="post" id="bulk-edit-form" onsubmit="if(this.bulk_action.value === 'delete') { return confirm('Are you sure you want to delete the selected parts?'); }">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <button id="toggle-thumbnails-btn" class="btn btn-secondary">Toggle Thumbnails</button>
