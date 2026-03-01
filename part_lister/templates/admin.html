@@ -43,6 +43,22 @@
                             <input type="text" class="form-control" name="supplier_name" id="supplier_name">
                         </div>
                         <div class="mb-3">
+                            <label for="category" class="form-label">Category:</label>
+                            <input type="text" class="form-control" name="category" id="category">
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location:</label>
+                            <input type="text" class="form-control" name="location" id="location">
+                        </div>
+                        <div class="mb-3">
+                            <label for="stock_quantity" class="form-label">Stock Quantity:</label>
+                            <input type="number" class="form-control" name="stock_quantity" id="stock_quantity" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="reorder_level" class="form-label">Reorder Level:</label>
+                            <input type="number" class="form-control" name="reorder_level" id="reorder_level" value="0">
+                        </div>
+                        <div class="mb-3">
                             <label for="notes" class="form-label">Notes:</label>
                             <textarea class="form-control" name="notes" id="notes"></textarea>
                         </div>
@@ -75,6 +91,14 @@
                         <div class="col-md-4">
                             <label for="filter_part_number" class="form-label">Part Number:</label>
                             <input type="text" class="form-control" name="filter_part_number" id="filter_part_number" value="{{ request.args.get('filter_part_number', '') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="filter_category" class="form-label">Category:</label>
+                            <input type="text" class="form-control" name="filter_category" id="filter_category" value="{{ request.args.get('filter_category', '') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="filter_location" class="form-label">Location:</label>
+                            <input type="text" class="form-control" name="filter_location" id="filter_location" value="{{ request.args.get('filter_location', '') }}">
                         </div>
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary">Filter</button>
@@ -136,6 +160,10 @@
                         <th>Part Number</th>
                         <th>UOM</th>
                         <th>Supplier</th>
+                        <th>Category</th>
+                        <th>Location</th>
+                        <th>Stock Qty</th>
+                        <th>Reorder Level</th>
                         <th>Notes</th>
                         <th>Attachments</th>
                         <th>Actions</th>
@@ -143,7 +171,7 @@
                 </thead>
                 <tbody>
                     {% for part in parts %}
-                    <tr>
+                    <tr class="{% if part['reorder_level'] > 0 and part['stock_quantity'] <= part['reorder_level'] %}table-warning{% endif %}">
                         <td><input type="checkbox" name="part_ids" value="{{ part.id }}" class="part-checkbox"></td>
                         <td class="thumbnail-col">
                             {% if part.thumbnail %}
@@ -155,6 +183,10 @@
                         <td><a href="{{ url_for('part_view', part_id=part.id, origin='admin') }}">{{ part['part_number'] }}</a></td>
                         <td>{{ part['uom'] }}</td>
                         <td>{{ part['supplier_name'] }}</td>
+                        <td>{{ part['category'] }}</td>
+                        <td>{{ part['location'] }}</td>
+                        <td>{{ part['stock_quantity'] }}</td>
+                        <td>{{ part['reorder_level'] }}</td>
                         <td>{{ part['notes'] }}</td>
                         <td>
                             {% if part.attachments %}

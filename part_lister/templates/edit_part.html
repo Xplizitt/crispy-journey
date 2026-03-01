@@ -28,6 +28,22 @@
                     <label for="supplier_name" class="form-label">Supplier Name:</label>
                     <input type="text" class="form-control" name="supplier_name" id="supplier_name" value="{{ part['supplier_name'] }}">
                 </div>
+        <div class="mb-3">
+            <label for="category" class="form-label">Category:</label>
+            <input type="text" class="form-control" name="category" id="category" value="{{ part['category'] if part['category'] else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="location" class="form-label">Location:</label>
+            <input type="text" class="form-control" name="location" id="location" value="{{ part['location'] if part['location'] else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="stock_quantity" class="form-label">Stock Quantity:</label>
+            <input type="number" class="form-control" name="stock_quantity" id="stock_quantity" value="{{ part['stock_quantity'] }}">
+        </div>
+        <div class="mb-3">
+            <label for="reorder_level" class="form-label">Reorder Level:</label>
+            <input type="number" class="form-control" name="reorder_level" id="reorder_level" value="{{ part['reorder_level'] }}">
+        </div>
                 <div class="mb-3">
                     <label for="notes" class="form-label">Notes:</label>
                     <textarea class="form-control" name="notes" id="notes">{{ part['notes'] }}</textarea>
