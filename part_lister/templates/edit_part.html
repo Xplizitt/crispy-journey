@@ -68,6 +68,46 @@
         </div>
         <div class="col-md-4">
 
+
+            <h2>Attachments</h2>
+            <div class="d-grid gap-2 mb-2">
+                <a href="{{ url_for('select_thumbnail', part_ids=part.id) }}" class="btn btn-sm btn-info">Choose from Gallery</a>
+            </div>
+            {% if part.thumbnail %}
+            <div class="mb-2">
+                <a href="{{ url_for('clear_thumbnail', part_id=part.id) }}" class="btn btn-sm btn-outline-warning w-100">Clear Thumbnail</a>
+            </div>
+            {% endif %}
+
+            <div class="list-group">
+            {% for attachment in attachments %}
+                {% set ext = attachment.filename.split('.')[-1].lower() %}
+                {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
+                    {% set is_thumbnail = part.thumbnail and attachment.filename in part.thumbnail %}
+                    <div class="list-group-item attachment-item {{ 'active' if is_thumbnail }}">
+                        <img src="{{ url_for('uploaded_file', filename=attachment.filename) }}" alt="{{ attachment.filename }}" class="img-fluid rounded mb-2">
+                        <div class="d-grid gap-2">
+                             {% if not is_thumbnail %}
+                            <a href="{{ url_for('set_thumbnail', part_id=part.id, attachment_id=attachment.id) }}" class="btn btn-sm btn-success">Set as Thumbnail</a>
+                             {% endif %}
+                            <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this attachment?');">Delete</a>
+                        </div>
+                    </div>
+                {% else %}
+                     <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        {{ attachment.filename }}
+                        <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this attachment?');"><i class="bi bi-trash"></i></a>
+                    </a>
+                {% endif %}
+            {% else %}
+                <div class="list-group-item">No attachments.</div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
         <hr>
         {% if part['part_type'] in ['Manufactured', 'Assembly'] %}
         <div class="mb-4">
@@ -112,41 +152,6 @@
             </form>
         </div>
         {% endif %}
-
-            <h2>Attachments</h2>
-            <div class="d-grid gap-2 mb-2">
-                <a href="{{ url_for('select_thumbnail', part_ids=part.id) }}" class="btn btn-sm btn-info">Choose from Gallery</a>
-            </div>
-            {% if part.thumbnail %}
-            <div class="mb-2">
-                <a href="{{ url_for('clear_thumbnail', part_id=part.id) }}" class="btn btn-sm btn-outline-warning w-100">Clear Thumbnail</a>
-            </div>
-            {% endif %}
-
-            <div class="list-group">
-            {% for attachment in attachments %}
-                {% set ext = attachment.filename.split('.')[-1].lower() %}
-                {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
-                    {% set is_thumbnail = part.thumbnail and attachment.filename in part.thumbnail %}
-                    <div class="list-group-item attachment-item {{ 'active' if is_thumbnail }}">
-                        <img src="{{ url_for('uploaded_file', filename=attachment.filename) }}" alt="{{ attachment.filename }}" class="img-fluid rounded mb-2">
-                        <div class="d-grid gap-2">
-                             {% if not is_thumbnail %}
-                            <a href="{{ url_for('set_thumbnail', part_id=part.id, attachment_id=attachment.id) }}" class="btn btn-sm btn-success">Set as Thumbnail</a>
-                             {% endif %}
-                            <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this attachment?');">Delete</a>
-                        </div>
-                    </div>
-                {% else %}
-                     <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        {{ attachment.filename }}
-                        <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this attachment?');"><i class="bi bi-trash"></i></a>
-                    </a>
-                {% endif %}
-            {% else %}
-                <div class="list-group-item">No attachments.</div>
-            {% endfor %}
-            </div>
         </div>
     </div>
 {% endblock %}
