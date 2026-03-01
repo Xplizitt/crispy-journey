@@ -37,3 +37,16 @@ This log file tracks changes made to the codebase by the AI agent. It includes t
 - Refactored `app.py` to register blueprints and serve as the main application factory. To satisfy the strict constraint of zero feature changes (particularly regarding HTML templates), a template context processor was introduced in `app.py` to transparently map original endpoint names in existing `url_for` calls to their new blueprint-prefixed names. Added Mile Marker comments to new route files and `app.py`.
 
 **Reasoning:** To stabilize the codebase and separate logically distinct domains (Admin, Scanner, Core lists) into their own modules prior to adding new inventory tracking features. This keeps `app.py` streamlined and improves maintainability while preserving absolute backward compatibility with existing templates and legacy endpoints.
+## 2024-xx-xx - Implemented Manufacturing BOM & Material Yield Tracking
+**Modifications:**
+*   `part_lister/database.py`: Added `part_type` column to `parts` table and created a new `bom_components` table to track parent/child relationship and required quantities.
+*   `part_lister/routes/admin.py`:
+    *   Updated `add_part` and `edit_part` to include the `part_type` field.
+    *   Added endpoints `add_bom_component` and `remove_bom_component` for managing BOMs.
+    *   Added the `build_part` endpoint, which calculates child components based on build quantity, deducts component stock, increments the parent's stock, and logs the actions to `audit_log`.
+*   `part_lister/templates/edit_part.html`: Added a selector for `part_type` and a conditional UI for managing a part's BOM when the part type is set to Manufactured or Assembly.
+*   `part_lister/templates/part_view.html`: Displays the `part_type`, BOM, and an interface to run the Build Action.
+*   `part_lister/templates/admin.html`: Added the `Type` column.
+
+**Architectural Reasoning:**
+The BOM structure is a many-to-many relationship using a junction table (`bom_components`), but we model it specifically with a `quantity_required` field in order to define precisely the amount to consume when building the parent component. Real numbers are used for quantities so that fractional consumption is allowed. The database migration logic uses `PRAGMA table_info` and checks for column existence before adding it to avoid catastrophic deletion. Pre-commit commands complete verifying changes.

@@ -40,6 +40,11 @@
                         <th scope="row">Supplier Name</th>
                         <td>{{ part['supplier_name'] }}</td>
                     </tr>
+
+                    <tr>
+                        <th scope="row">Part Type</th>
+                        <td>{{ part['part_type'] }}</td>
+                    </tr>
                     <tr>
                         <th scope="row">Category</th>
                         <td>{{ part['category'] if part['category'] else 'N/A' }}</td>
@@ -64,6 +69,45 @@
             </table>
         </div>
         <div class="col-md-6">
+
+            {% if part['part_type'] in ['Manufactured', 'Assembly'] %}
+            <h2>Bill of Materials</h2>
+            {% if bom_components %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Qty Required</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comp in bom_components %}
+                        <tr>
+                            <td><a href="{{ url_for('admin_bp.part_view', part_id=comp['child_part_id']) }}">{{ comp['barcode'] }} - {{ comp['description'] }}</a></td>
+                            <td>{{ comp['quantity_required'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="card mt-3 mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Build Units</h5>
+                        <form method="post" action="{{ url_for('admin_bp.build_part', part_id=part['id']) }}" class="row g-3 align-items-center">
+                            <div class="col-auto">
+                                <label for="build_quantity" class="visually-hidden">Quantity</label>
+                                <input type="number" min="1" step="1" class="form-control" id="build_quantity" name="build_quantity" placeholder="Quantity to Build" required>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-success">Build</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <p>No BOM defined.</p>
+            {% endif %}
+            {% endif %}
+
             <h2>Photo Gallery</h2>
             {% if image_attachments %}
                 <div class="row">
