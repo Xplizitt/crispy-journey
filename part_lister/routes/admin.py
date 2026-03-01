@@ -184,7 +184,7 @@ def edit_part(part_id):
                 UPDATE parts
                 SET barcode=?, description=?, part_number=?, uom=?, supplier_name=?, category=?, location=?, stock_quantity=?, reorder_level=?, part_type=?, notes=?
                 WHERE id=?
-            ''', [barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, notes, part_id])
+            ''', [barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, notes, part_id])
 
             if changes:
                 db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
