@@ -857,8 +857,10 @@ def gallery_bulk_edit():
                 filename = image['filename']
 
                 # Check if this image is used as a thumbnail
-                thumb_filename_pattern = f"%thumb_%_{filename}"
-                cur = db.execute('SELECT COUNT(*) as count FROM parts WHERE thumbnail LIKE ?', [thumb_filename_pattern])
+                # Escape special characters _ and % for the LIKE statement
+                escaped_filename = filename.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+                thumb_filename_pattern = f"thumb!_%!_{escaped_filename}"
+                cur = db.execute("SELECT COUNT(*) as count FROM parts WHERE thumbnail LIKE ? ESCAPE '!'", [thumb_filename_pattern])
                 usage = cur.fetchone()
                 if usage['count'] > 0:
                     flash(f"Cannot delete image '{filename}'. It is used as a thumbnail.", 'error')
