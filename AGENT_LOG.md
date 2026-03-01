@@ -50,3 +50,9 @@ This log file tracks changes made to the codebase by the AI agent. It includes t
 
 **Architectural Reasoning:**
 The BOM structure is a many-to-many relationship using a junction table (`bom_components`), but we model it specifically with a `quantity_required` field in order to define precisely the amount to consume when building the parent component. Real numbers are used for quantities so that fractional consumption is allowed. The database migration logic uses `PRAGMA table_info` and checks for column existence before adding it to avoid catastrophic deletion. Pre-commit commands complete verifying changes.
+
+## 2024-05-14 (Auto-logged)
+
+### Update README.md
+**The Change:** Updated README.md to include setup and running instructions.
+**The Reasoning:** The user requested the README.md to be updated with instructions for running the application.
