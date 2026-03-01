@@ -51,7 +51,7 @@ app.config['SECRET_KEY'] = 'dev'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['THUMBNAIL_FOLDER'] = THUMBNAIL_FOLDER
 # Set ADMIN_PASSWORD in app config for use in blueprints
-app.config['ADMIN_PASSWORD'] = 'admin'
+app.config['ADMIN_PASSWORD'] = os.environ.get('ADMIN_PASSWORD')
 
 # --- Utility Functions ---
 def create_thumbnail(image_path, thumbnail_path, size=(128, 128)):
