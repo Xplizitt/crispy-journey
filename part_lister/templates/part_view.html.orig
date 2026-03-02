@@ -17,11 +17,6 @@
     <hr>
     <div class="row">
         <div class="col-md-6">
-            {% if part.thumbnail %}
-            <div class="mb-4 text-center">
-                <img src="{{ url_for('uploaded_file', filename=part.thumbnail) }}" alt="Thumbnail for {{ part.part_number }}" class="img-fluid img-thumbnail" style="max-height: 250px;">
-            </div>
-            {% endif %}
             <h2>Information</h2>
             <table class="table">
                 <tbody>
@@ -148,18 +143,24 @@
 
     <h2>Attached Files</h2>
     {% if other_files %}
-        <div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
-            {% for file in other_files %}
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body text-center d-flex flex-column justify-content-center">
-                            <h5 class="card-title text-truncate mb-3" title="{{ file.filename }}">{{ file.filename }}</h5>
-                            <a href="{{ url_for('uploaded_file', filename=file.filename) }}" class="btn btn-sm btn-outline-primary mt-auto" target="_blank">Download</a>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in other_files %}
+                    <tr>
+                        <td>{{ file.filename }}</td>
+                        <td>
+                            <a href="{{ url_for('uploaded_file', filename=file.filename) }}" class="btn btn-sm btn-primary" target="_blank">Download</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     {% else %}
         <p>No files attached.</p>
     {% endif %}
