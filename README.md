@@ -34,7 +34,7 @@ A simple web application for building part lists, designed with a /scanner page 
     ```
 4.  **Run the application:**
     ```bash
-    python part_lister/app.py
+    PYTHONPATH=. python part_lister/app.py
     ```
 5.  **Access the application:**
     Open a web browser and navigate to `http://localhost:5000`.
