@@ -395,6 +395,16 @@ def apply_thumbnail(filename):
         if create_thumbnail(original_path, thumb_path):
              # 3. Update database
              db.execute('UPDATE parts SET thumbnail = ? WHERE id = ?', [thumb_filename, part_id])
+
+             # 4. Check if the image is already an attachment for this part
+             cur = db.execute('SELECT id FROM attachments WHERE part_id = ? AND filename = ?', [part_id, filename])
+             if not cur.fetchone():
+                 # 5. Add as attachment
+                 db.execute('INSERT INTO attachments (part_id, filename, filepath) VALUES (?, ?, ?)',
+                            [part_id, filename, filename])
+                 db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
+                            (part_id, 'Attachment Added', f"Added file from gallery: {filename}"))
+
              success_count += 1
 
     db.commit()
