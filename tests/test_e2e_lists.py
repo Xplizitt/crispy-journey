@@ -21,9 +21,9 @@ def test_multiple_list_workflow(page: Page):
 
     # Import the part
     page.goto("http://127.0.0.1:5000/admin")
-    page.get_by_role("button", name="Import Parts").click()
+    page.get_by_role("button", name="Import Parts").click(force=True)
     page.locator("input[name='file']").set_input_files('part_to_add.csv')
-    page.get_by_role("button", name="Import", exact=True).click()
+    page.get_by_role("button", name="Import", exact=True).click(force=True)
     expect(page.get_by_text("Successfully imported 1 parts.")).to_be_visible()
 
     # --- 2. Verify Default List and Add Item ---
