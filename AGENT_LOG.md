@@ -80,3 +80,4 @@ The BOM structure is a many-to-many relationship using a junction table (`bom_co
   - Added a one-time migration script to process all existing images and natively generate thumbnail versions of them to reduce server traffic for legacy assets.
 - Updated `apply_thumbnail` function in `part_lister/routes/admin.py` to also add the file as an attachment to the part if it isn't one already.
 Updated part_view.html to display thumbnail, show images in gallery, and other files in a card grid
+\n- 2026-03-03 - Added `aria-label` attributes to `#lightboxPrev` and `#lightboxNext` buttons in `part_lister/templates/gallery.html` for better accessibility.

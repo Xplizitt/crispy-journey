@@ -1,0 +1,3 @@
+## 2026-03-03 - Adding ARIA labels to Lightbox Navigation Buttons
+**Learning:** Icon-only navigation buttons in custom modals (like the gallery lightbox) are frequently missed by screen readers if they rely solely on visual cues (like '<' and '>'). Adding `aria-label` provides immediate context without breaking the visual design, ensuring keyboard and screen-reader users can effectively navigate image carousels.
+**Action:** When implementing or reviewing custom modal or carousel components, always verify that structural navigation controls have descriptive `aria-label` attributes if they lack visible text.
