@@ -79,9 +79,13 @@ def view(work_order_id):
     cur = db.execute('SELECT * FROM work_order_logs WHERE work_order_id = ? ORDER BY created_at DESC', [work_order_id])
     logs = cur.fetchall()
 
+    total_labor = 0.0
+
     # Get attachments for logs
     logs_dict = [dict(l) for l in logs]
     for log in logs_dict:
+        if log.get('labor_time'):
+            total_labor += log['labor_time']
         cur = db.execute('SELECT * FROM work_order_attachments WHERE log_id = ?', [log['id']])
         log['attachments'] = cur.fetchall()
 
@@ -89,7 +93,11 @@ def view(work_order_id):
     cur = db.execute('SELECT * FROM work_order_attachments WHERE work_order_id = ? AND log_id IS NULL AND task_id IS NULL', [work_order_id])
     attachments = cur.fetchall()
 
-    return render_template('work_orders/view.html', work_order=work_order, tasks=tasks_dict, logs=logs_dict, attachments=attachments)
+    # Get all parts for datalist selection
+    cur = db.execute('SELECT barcode, part_number, description FROM parts ORDER BY part_number ASC')
+    all_parts = cur.fetchall()
+
+    return render_template('work_orders/view.html', work_order=work_order, tasks=tasks_dict, logs=logs_dict, attachments=attachments, total_labor=total_labor, all_parts=all_parts)
 
 @work_orders_bp.route('/<int:work_order_id>/update_status', methods=['POST'])
 def update_status(work_order_id):
@@ -220,5 +228,41 @@ def upload_attachment(work_order_id):
                [work_order_id, log_id if log_id else None, task_id if task_id else None, file.filename, filename])
     db.commit()
     flash('Attachment uploaded successfully.', 'success')
+
+    return redirect(url_for('work_orders_bp.view', work_order_id=work_order_id))
+
+@work_orders_bp.route('/<int:work_order_id>/delete_task/<int:task_id>', methods=['POST'])
+def delete_task(work_order_id, task_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_bp.login'))
+
+    db = get_db()
+    db.execute('DELETE FROM work_order_tasks WHERE id = ? AND work_order_id = ?', [task_id, work_order_id])
+    db.commit()
+    flash('Task deleted.', 'success')
+
+    return redirect(url_for('work_orders_bp.view', work_order_id=work_order_id))
+
+@work_orders_bp.route('/<int:work_order_id>/delete_task_part/<int:task_part_id>', methods=['POST'])
+def delete_task_part(work_order_id, task_part_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_bp.login'))
+
+    db = get_db()
+    db.execute('DELETE FROM task_parts WHERE id = ?', [task_part_id])
+    db.commit()
+    flash('Part removed from task.', 'success')
+
+    return redirect(url_for('work_orders_bp.view', work_order_id=work_order_id))
+
+@work_orders_bp.route('/<int:work_order_id>/delete_log/<int:log_id>', methods=['POST'])
+def delete_log(work_order_id, log_id):
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_bp.login'))
+
+    db = get_db()
+    db.execute('DELETE FROM work_order_logs WHERE id = ? AND work_order_id = ?', [log_id, work_order_id])
+    db.commit()
+    flash('Log entry deleted.', 'success')
 
     return redirect(url_for('work_orders_bp.view', work_order_id=work_order_id))
