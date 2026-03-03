@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Work Order #{{ work_order.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Work Order #{{ work_order.id }}: {{ work_order.title }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('work_orders_bp.index') }}" class="btn btn-sm btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <form action="{{ url_for('work_orders_bp.update_status', work_order_id=work_order.id) }}" method="POST" class="d-flex align-items-center">
+            <select name="status" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                <option value="Open" {% if work_order.status == 'Open' %}selected{% endif %}>Open</option>
+                <option value="In Progress" {% if work_order.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Completed" {% if work_order.status == 'Completed' %}selected{% endif %}>Completed</option>
+                <option value="Closed" {% if work_order.status == 'Closed' %}selected{% endif %}>Closed</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Work Order Details & Tasks -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Tasks</h5>
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                    <i class="bi bi-plus"></i> Add Task
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for task in tasks %}
+                    <li class="list-group-item text-dark">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ task.description }}</div>
+                                <div class="mt-2">
+                                    <span class="badge {% if task.status == 'TBD' %}bg-secondary{% elif task.status == 'In Progress' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                        {{ task.status }}
+                                    </span>
+                                </div>
+
+                                <!-- Task Parts -->
+                                {% if task.parts %}
+                                <div class="mt-3">
+                                    <h6>Parts Required:</h6>
+                                    <ul>
+                                        {% for part in task.parts %}
+                                        <li>{{ part.quantity }}x {{ part.part_number }} - {{ part.description }} ({{ part.barcode }})</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+
+                                <!-- Task Attachments -->
+                                {% if task.attachments %}
+                                <div class="mt-3">
+                                    <h6>Photos/Attachments:</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for att in task.attachments %}
+                                        <a href="{{ url_for('core_bp.uploaded_file', filename=att.filepath) }}" target="_blank">
+                                            <img src="{{ url_for('core_bp.uploaded_file', filename=att.filepath) }}" alt="{{ att.filename }}" style="height: 50px; width: 50px; object-fit: cover;" class="img-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/50?text=File';">
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex flex-column gap-2">
+                                <form action="{{ url_for('work_orders_bp.update_task_status', work_order_id=work_order.id, task_id=task.id) }}" method="POST">
+                                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <option value="TBD" {% if task.status == 'TBD' %}selected{% endif %}>TBD</option>
+                                        <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="Complete" {% if task.status == 'Complete' %}selected{% endif %}>Complete</option>
+                                    </select>
+                                </form>
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addPartModal{{ task.id }}">
+                                    <i class="bi bi-tools"></i> Add Part
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#uploadTaskModal{{ task.id }}">
+                                    <i class="bi bi-camera"></i> Attach
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add Part to Task Modal -->
+                        <div class="modal fade" id="addPartModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content text-dark">
+                                    <form action="{{ url_for('work_orders_bp.add_task_part', work_order_id=work_order.id, task_id=task.id) }}" method="POST">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Add Part to Task</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Part Barcode</label>
+                                                <input type="text" class="form-control" name="barcode" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" class="form-control" name="quantity" value="1" min="1" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">Add Part</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Task Attachment Modal -->
+                        <div class="modal fade" id="uploadTaskModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content text-dark">
+                                    <form action="{{ url_for('work_orders_bp.upload_attachment', work_order_id=work_order.id) }}" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="task_id" value="{{ task.id }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Attach Photo/File to Task</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <input type="file" class="form-control" name="file" required>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">Upload</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-center text-dark">No tasks added yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Labor Log -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Labor Log</h5>
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addLogModal">
+                    <i class="bi bi-plus"></i> Add Log
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for log in logs %}
+                    <li class="list-group-item text-dark">
+                        <small class="text-muted">{{ log.created_at }}</small>
+                        <p class="mb-1">{{ log.description }}</p>
+                        {% if log.labor_time %}
+                        <small class="badge bg-secondary mb-2">{{ log.labor_time }} hrs</small>
+                        {% endif %}
+
+                        {% if log.attachments %}
+                        <div class="d-flex flex-wrap gap-1 mt-2">
+                            {% for att in log.attachments %}
+                            <a href="{{ url_for('core_bp.uploaded_file', filename=att.filepath) }}" target="_blank">
+                                <img src="{{ url_for('core_bp.uploaded_file', filename=att.filepath) }}" class="img-thumbnail" style="height:40px; width:40px; object-fit:cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/40?text=File';">
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <button type="button" class="btn btn-xs btn-link p-0 mt-2" data-bs-toggle="modal" data-bs-target="#uploadLogModal{{ log.id }}">Attach File</button>
+
+                        <!-- Upload Log Attachment Modal -->
+                        <div class="modal fade" id="uploadLogModal{{ log.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content text-dark">
+                                    <form action="{{ url_for('work_orders_bp.upload_attachment', work_order_id=work_order.id) }}" method="POST" enctype="multipart/form-data">
+                                        <input type="hidden" name="log_id" value="{{ log.id }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Attach File to Log</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <input type="file" class="form-control" name="file" required>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">Upload</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-center text-dark">No logs added yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- General WO Attachments -->
+        <div class="card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">WO Attachments</h5>
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#uploadWOModal">
+                    <i class="bi bi-paperclip"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for att in attachments %}
+                    <a href="{{ url_for('core_bp.uploaded_file', filename=att.filepath) }}" target="_blank" class="list-group-item list-group-item-action text-dark text-truncate">
+                        <i class="bi bi-file-earmark"></i> {{ att.filename }}
+                    </a>
+                    {% else %}
+                    <p class="text-muted mb-0">No general attachments.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="addTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content text-dark">
+            <form action="{{ url_for('work_orders_bp.add_task', work_order_id=work_order.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Task Description</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content text-dark">
+            <form action="{{ url_for('work_orders_bp.add_log', work_order_id=work_order.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Labor Log</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Labor Time (Hours)</label>
+                        <input type="number" step="0.25" min="0" class="form-control" name="labor_time" value="0.0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description of Work</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadWOModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content text-dark">
+            <form action="{{ url_for('work_orders_bp.upload_attachment', work_order_id=work_order.id) }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Attach File to Work Order</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="file" class="form-control" name="file" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

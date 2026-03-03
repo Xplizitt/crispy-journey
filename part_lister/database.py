@@ -74,6 +74,65 @@ def init_db_migrations(db):
         )
     ''')
 
+
+    # Ensure work order tables exist
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS work_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'Open',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS work_order_tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_order_id INTEGER NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT DEFAULT 'TBD',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS task_parts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            part_id INTEGER NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY (task_id) REFERENCES work_order_tasks (id) ON DELETE CASCADE,
+            FOREIGN KEY (part_id) REFERENCES parts (id)
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS work_order_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_order_id INTEGER NOT NULL,
+            labor_time REAL,
+            description TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS work_order_attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_order_id INTEGER,
+            log_id INTEGER,
+            task_id INTEGER,
+            filename TEXT NOT NULL,
+            filepath TEXT NOT NULL,
+            FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE,
+            FOREIGN KEY (log_id) REFERENCES work_order_logs (id) ON DELETE CASCADE,
+            FOREIGN KEY (task_id) REFERENCES work_order_tasks (id) ON DELETE CASCADE
+        )
+    ''')
+
     db.commit()
 
 
@@ -160,6 +219,69 @@ def init_db():
             details TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (part_id) REFERENCES parts (id) ON DELETE CASCADE
+        )
+    ''')
+
+
+    # Create work_orders table
+    c.execute('''
+        CREATE TABLE work_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'Open',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Create work_order_tasks table
+    c.execute('''
+        CREATE TABLE work_order_tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_order_id INTEGER NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT DEFAULT 'TBD',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Create task_parts table
+    c.execute('''
+        CREATE TABLE task_parts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            part_id INTEGER NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY (task_id) REFERENCES work_order_tasks (id) ON DELETE CASCADE,
+            FOREIGN KEY (part_id) REFERENCES parts (id)
+        )
+    ''')
+
+    # Create work_order_logs table
+    c.execute('''
+        CREATE TABLE work_order_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_order_id INTEGER NOT NULL,
+            labor_time REAL,
+            description TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE
+        )
+    ''')
+
+    # Create work_order_attachments table
+    c.execute('''
+        CREATE TABLE work_order_attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            work_order_id INTEGER,
+            log_id INTEGER,
+            task_id INTEGER,
+            filename TEXT NOT NULL,
+            filepath TEXT NOT NULL,
+            FOREIGN KEY (work_order_id) REFERENCES work_orders (id) ON DELETE CASCADE,
+            FOREIGN KEY (log_id) REFERENCES work_order_logs (id) ON DELETE CASCADE,
+            FOREIGN KEY (task_id) REFERENCES work_order_tasks (id) ON DELETE CASCADE
         )
     ''')
 
