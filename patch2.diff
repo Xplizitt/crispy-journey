@@ -1,0 +1,11 @@
+--- part_lister/templates/part_view.html
++++ part_lister/templates/part_view.html
+@@ -17,7 +17,7 @@
+         <div class="col-md-6">
+             {% if part.thumbnail %}
+             <div class="mb-4 text-center">
+-                <img src="{{ url_for('uploaded_file', filename=part.thumbnail) }}" alt="Thumbnail for {{ part.part_number }}" class="img-fluid img-thumbnail" style="max-height: 250px;">
++                <img src="{{ url_for('core_bp.serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail for {{ part.part_number }}" class="img-fluid img-thumbnail" style="max-height: 250px;">
+             </div>
+             {% endif %}
+             <h2>Information</h2>
