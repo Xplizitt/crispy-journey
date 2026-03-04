@@ -81,3 +81,13 @@ The BOM structure is a many-to-many relationship using a junction table (`bom_co
 - Updated `apply_thumbnail` function in `part_lister/routes/admin.py` to also add the file as an attachment to the part if it isn't one already.
 Updated part_view.html to display thumbnail, show images in gallery, and other files in a card grid
 Changes documented
+
+## 2026-03-03: UI Enhancements
+
+*   **The Change:**
+    *   Added `shadow-sm` to main container in `part_lister/templates/base.html` for depth.
+    *   Added `align-middle` to tables in `part_lister/templates/index.html` and `part_lister/templates/admin.html` to center text vertically with thumbnails.
+    *   Added Bootstrap icons (`bi-house-door`, `bi-gear`, `bi-card-checklist`) to navbar links in `part_lister/templates/base.html`.
+    *   Replaced text-based "Edit" and "Delete" buttons with icon-only buttons (`bi-pencil`, `bi-trash`) across `index.html`, `admin.html`, and dynamic JS rows in `app.js`. Added `aria-label`s for accessibility.
+    *   Created `.Jules/palette.md` to document UI learnings.
+*   **The Reasoning:** To improve the layout and visual professionalism of the interface per the user's request. Following Palette UX guidelines for accessibility and CSS usage.

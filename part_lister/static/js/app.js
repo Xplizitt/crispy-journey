@@ -244,8 +244,8 @@
                         <td>${data.notes || ''}</td>
                         <td>${attachmentLinks}</td>
                         <td>
-                            <a href="/edit_part/${data.id}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <a href="/delete_part/${data.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this part?');">Delete</a>
+                            <a href="/edit_part/${data.id}" class="btn btn-sm btn-outline-primary" aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a href="/delete_part/${data.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this part?');" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></a>
                         </td>
                     `;
                     tableBody.prepend(newRow);
@@ -284,8 +284,8 @@
                 <td>${item.supplier_name || ''}</td>
                 <td>${item.quantity}</td>
                 <td>
-                    <a href="/edit_list_item/${item.id}" class="btn btn-sm btn-outline-primary">Edit</a>
-                    <a href="/delete_list_item/${item.id}" class="btn btn-sm btn-outline-danger">Delete</a>
+                    <a href="/edit_list_item/${item.id}" class="btn btn-sm btn-outline-primary" aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                    <a href="/delete_list_item/${item.id}" class="btn btn-sm btn-outline-danger" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></a>
                 </td>
             `;
             tableBody.appendChild(newRow);

@@ -45,13 +45,13 @@
             <div class="collapse navbar-collapse" id="navbarCollapse">
                 <ul class="navbar-nav me-auto mb-2 mb-md-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                        <a class="nav-link" href="{{ url_for('index') }}"><i class="bi bi-house-door"></i> Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin') }}">Admin</a>
+                        <a class="nav-link" href="{{ url_for('admin') }}"><i class="bi bi-gear"></i> Admin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('work_orders_bp.index') }}">Work Orders</a>
+                        <a class="nav-link" href="{{ url_for('work_orders_bp.index') }}"><i class="bi bi-card-checklist"></i> Work Orders</a>
                     </li>
                 </ul>
                 <div class="navbar-nav">
@@ -70,7 +70,7 @@
     </nav>
 
     <main class="container">
-        <div class="bg-light p-5 rounded">
+        <div class="bg-light p-5 rounded shadow-sm">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     <ul class=flash-messages>
