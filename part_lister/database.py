@@ -81,6 +81,7 @@ def init_db_migrations(db):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             description TEXT,
+            customer_id INTEGER REFERENCES customers(id),
             status TEXT DEFAULT 'Open',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -133,6 +134,38 @@ def init_db_migrations(db):
         )
     ''')
 
+
+    # Ensure customers table exists
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            notes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Add customer_id to parts if it doesn't exist
+    c.execute("PRAGMA table_info(parts)")
+    existing_columns = [row[1] for row in c.fetchall()]
+    if 'customer_id' not in existing_columns:
+        try:
+            c.execute("ALTER TABLE parts ADD COLUMN customer_id INTEGER REFERENCES customers(id)")
+        except sqlite3.OperationalError as e:
+            pass
+
+    # Add customer_id to work_orders if it doesn't exist
+    c.execute("PRAGMA table_info(work_orders)")
+    existing_columns = [row[1] for row in c.fetchall()]
+    if 'customer_id' not in existing_columns:
+        try:
+            c.execute("ALTER TABLE work_orders ADD COLUMN customer_id INTEGER REFERENCES customers(id)")
+        except sqlite3.OperationalError as e:
+            pass
+
     db.commit()
 
 
@@ -159,8 +192,23 @@ def init_db():
             stock_quantity INTEGER DEFAULT 0,
             reorder_level INTEGER DEFAULT 0,
             part_type TEXT DEFAULT 'Purchased',
+            customer_id INTEGER REFERENCES customers(id),
             thumbnail TEXT,
             notes TEXT
+        )
+    ''')
+
+
+    # Create customers table
+    c.execute('''
+        CREATE TABLE customers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            notes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -229,6 +277,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             description TEXT,
+            customer_id INTEGER REFERENCES customers(id),
             status TEXT DEFAULT 'Open',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )

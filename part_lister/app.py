@@ -88,11 +88,13 @@ from part_lister.routes.admin import admin_bp
 from part_lister.routes.scanner import scanner_bp
 from part_lister.routes.core import core_bp
 from part_lister.routes.work_orders import work_orders_bp
+from part_lister.routes.customers import customers_bp
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(scanner_bp)
 app.register_blueprint(core_bp)
 app.register_blueprint(work_orders_bp)
+app.register_blueprint(customers_bp)
 
 # --- Template Compatibility ---
 # Context processor to map old `url_for` calls in templates to the new blueprint routes.
