@@ -91,3 +91,5 @@ Changes documented
     *   Replaced text-based "Edit" and "Delete" buttons with icon-only buttons (`bi-pencil`, `bi-trash`) across `index.html`, `admin.html`, and dynamic JS rows in `app.js`. Added `aria-label`s for accessibility.
     *   Created `.Jules/palette.md` to document UI learnings.
 *   **The Reasoning:** To improve the layout and visual professionalism of the interface per the user's request. Following Palette UX guidelines for accessibility and CSS usage.
+
+- 2024-05-24: Fixed nested interactive elements (`<a>` inside `<a>`) in `part_lister/templates/edit_part.html` to improve HTML validation and screen reader accessibility. Added `aria-label` to the delete attachment button. Documented the learning in `.Jules/palette.md`.
