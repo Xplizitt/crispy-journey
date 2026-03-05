@@ -91,3 +91,9 @@ Changes documented
     *   Replaced text-based "Edit" and "Delete" buttons with icon-only buttons (`bi-pencil`, `bi-trash`) across `index.html`, `admin.html`, and dynamic JS rows in `app.js`. Added `aria-label`s for accessibility.
     *   Created `.Jules/palette.md` to document UI learnings.
 *   **The Reasoning:** To improve the layout and visual professionalism of the interface per the user's request. Following Palette UX guidelines for accessibility and CSS usage.
+
+## 2026-03-04: Palette UX Enhancement - Work Orders Accessibility
+
+*   **The Change:**
+    *   Added `aria-label`s to the icon-only "Delete" buttons (trash can icons) in `part_lister/templates/work_orders/view.html`.
+*   **The Reasoning:** To improve screen reader accessibility for interactive elements, specifically targeting icon-only buttons without text descriptors, adhering directly to the "Palette" UX guidelines.
