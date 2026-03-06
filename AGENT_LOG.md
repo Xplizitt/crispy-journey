@@ -91,3 +91,7 @@ Changes documented
     *   Replaced text-based "Edit" and "Delete" buttons with icon-only buttons (`bi-pencil`, `bi-trash`) across `index.html`, `admin.html`, and dynamic JS rows in `app.js`. Added `aria-label`s for accessibility.
     *   Created `.Jules/palette.md` to document UI learnings.
 *   **The Reasoning:** To improve the layout and visual professionalism of the interface per the user's request. Following Palette UX guidelines for accessibility and CSS usage.
+
+## 2025-09-16 - Prevent Invalid HTML with Nested Interactive Elements in edit_part.html
+**The Change:** Replaced the invalid nested `<a>` tag for attachments in `part_lister/templates/edit_part.html` with a `<div>` wrapper. Made only the filename a link and added `aria-label="Delete attachment"` and `title="Delete"` to the delete button. Logged learning to `.Jules/palette.md`.
+**The Reasoning:** The previous structure nested an `<a>` tag (delete action) inside another `<a>` tag (list item link). This is invalid HTML and causes severe accessibility issues for screen readers. The new structure correctly uses sibling elements inside a non-interactive flex container, improving accessibility and maintaining a clean layout.
