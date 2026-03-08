@@ -87,7 +87,20 @@ def admin():
 
     return render_template('admin.html', parts=parts, search_query=search_query, categories=categories, current_category=category_filter, customers=customers)
 
+
+@admin_bp.route('/add_part_form')
+def add_part_form():
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_bp.login'))
+
+    db = get_db()
+    cur = db.execute('SELECT id, name FROM customers ORDER BY name ASC')
+    customers = cur.fetchall()
+
+    return render_template('add_part.html', customers=customers)
+
 @admin_bp.route('/add_part', methods=['POST'])
+
 def add_part():
     if not session.get('logged_in'):
         return redirect(url_for('admin_bp.login'))
@@ -549,7 +562,16 @@ def export_parts():
         headers={"Content-Disposition": "attachment;filename=parts_export.csv"}
     )
 
+
+@admin_bp.route('/import_parts_form')
+def import_parts_form():
+    if not session.get('logged_in'):
+        return redirect(url_for('admin_bp.login'))
+
+    return render_template('import_parts.html')
+
 @admin_bp.route('/import_parts', methods=['POST'])
+
 def import_parts():
     if not session.get('logged_in'):
         return redirect(url_for('admin_bp.login'))

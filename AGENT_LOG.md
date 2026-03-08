@@ -95,3 +95,8 @@ Changes documented
 - Created new `customers` Blueprint with full CRUD capability for customer records.
 - Updated Part Lister frontend to include a Customers section in the top nav menu.
 - Associated Parts and Work Orders screens updated to display and select assigned customers.
+- Reworked Admin Overview template (`part_lister/templates/admin.html`) to default to a search and filter view instead of an accordion.
+- Extracted Add Part form into a new template `part_lister/templates/add_part.html` and a new GET route `@admin_bp.route('/add_part_form')`.
+- Extracted Import Parts form into a new template `part_lister/templates/import_parts.html` and a new GET route `@admin_bp.route('/import_parts_form')`.
+- Updated Image Gallery template (`part_lister/templates/gallery.html`) with breadcrumbs back to Admin Overview.
+- Updated E2E tests in `tests/test_e2e_lists.py` to use a link instead of a button for Import Parts due to the navigation changes.
