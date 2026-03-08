@@ -16,11 +16,19 @@ def index():
     if not session.get('logged_in'):
         return redirect(url_for('admin_bp.login'))
 
+    search_query = request.args.get('search', '').strip()
     db = get_db()
-    cur = db.execute('SELECT * FROM customers ORDER BY name ASC')
+
+    if search_query:
+        query = 'SELECT * FROM customers WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? ORDER BY name ASC'
+        wildcard_search = f'%{search_query}%'
+        cur = db.execute(query, [wildcard_search, wildcard_search, wildcard_search])
+    else:
+        cur = db.execute('SELECT * FROM customers ORDER BY name ASC')
+
     customers = cur.fetchall()
 
-    return render_template('customers/index.html', customers=customers)
+    return render_template('customers/index.html', customers=customers, search_query=search_query)
 
 @customers_bp.route('/create', methods=['GET', 'POST'])
 def create():
