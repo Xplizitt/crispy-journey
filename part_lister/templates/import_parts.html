@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Import Parts{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.admin') }}">Admin Overview</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Import Parts</li>
+        </ol>
+    </nav>
+
+    <h2>Import Parts</h2>
+    <hr>
+
+    <div id="admin-alert-container"></div>
+
+    <div class="card">
+        <div class="card-body">
+            <p>Upload a CSV file containing parts data to import.</p>
+            <p>The CSV should have headers matching the fields in the database (e.g., barcode, description, part_number, etc.).</p>
+            <form action="{{ url_for('admin_bp.import_parts') }}" method="post" enctype="multipart/form-data" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label for="file" class="visually-hidden">CSV File</label>
+                    <input type="file" class="form-control" name="file" id="file" accept=".csv" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Import</button>
+                    <a href="{{ url_for('admin_bp.admin') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

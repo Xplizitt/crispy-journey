@@ -3,15 +3,21 @@
 {% block title %}Image Gallery{% endblock %}
 
 {% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.admin') }}">Admin Overview</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Image Gallery</li>
+    </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Image Gallery</h1>
-    <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">Back to Admin</a>
 </div>
 
 <!-- Search Bar -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" action="{{ url_for('gallery') }}" class="row gx-2 gy-2 align-items-center">
+        <form method="GET" action="{{ url_for('admin_bp.gallery') }}" class="row gx-2 gy-2 align-items-center">
             <div class="col-auto flex-grow-1">
                 <input type="text" name="search" class="form-control" placeholder="Search by filename or part name..." value="{{ search_query }}">
             </div>
@@ -20,7 +26,7 @@
             </div>
             {% if search_query %}
             <div class="col-auto">
-                <a href="{{ url_for('gallery') }}" class="btn btn-outline-secondary">Clear</a>
+                <a href="{{ url_for('admin_bp.gallery') }}" class="btn btn-outline-secondary">Clear</a>
             </div>
             {% endif %}
         </form>
@@ -32,7 +38,7 @@
         Upload New Images
     </div>
     <div class="card-body">
-        <form action="{{ url_for('gallery') }}" method="post" enctype="multipart/form-data">
+        <form action="{{ url_for('admin_bp.gallery') }}" method="post" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="files" class="form-label">Select images to upload:</label>
                 <input type="file" class="form-control" name="files" id="files" multiple required>
@@ -66,9 +72,9 @@
             </div>
             <div class="card h-100">
 
-                <a href="#" class="lightbox-trigger" data-fullres="{{ url_for('uploaded_file', filename=image.filename) }}" data-title="{{ image.filename }}">
-                    <img src="{{ url_for('serve_thumbnail', filename='thumb_gallery_' ~ image.filename) }}"
-                         onerror="this.onerror=null; this.src='{{ url_for('uploaded_file', filename=image.filename) }}';"
+                <a href="#" class="lightbox-trigger" data-fullres="{{ url_for('core_bp.uploaded_file', filename=image.filename) }}" data-title="{{ image.filename }}">
+                    <img src="{{ url_for('core_bp.serve_thumbnail', filename='thumb_gallery_' ~ image.filename) }}"
+                         onerror="this.onerror=null; this.src='{{ url_for('core_bp.uploaded_file', filename=image.filename) }}';"
                          class="card-img-top"
                          alt="{{ image.filename }}"
                          style="aspect-ratio: 1 / 1; object-fit: cover;">
@@ -83,7 +89,7 @@
                     {% endif %}
                 </div>
                 <div class="card-footer p-2 text-center bg-transparent border-top-0">
-                    <a href="{{ url_for('delete_image', image_id=image.id) }}" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Are you sure you want to permanently delete this image? This cannot be undone.');">Delete</a>
+                    <a href="{{ url_for('admin_bp.delete_image', image_id=image.id) }}" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Are you sure you want to permanently delete this image? This cannot be undone.');">Delete</a>
                 </div>
             </div>
         </div>
@@ -101,19 +107,19 @@
     <ul class="pagination justify-content-center">
         <!-- Previous Button -->
         <li class="page-item {% if page == 1 %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('gallery', page=page-1, search=search_query) }}">Previous</a>
+            <a class="page-link" href="{{ url_for('admin_bp.gallery', page=page-1, search=search_query) }}">Previous</a>
         </li>
 
         <!-- Page Numbers -->
         {% for p in range(1, total_pages + 1) %}
             <li class="page-item {% if page == p %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('gallery', page=p, search=search_query) }}">{{ p }}</a>
+                <a class="page-link" href="{{ url_for('admin_bp.gallery', page=p, search=search_query) }}">{{ p }}</a>
             </li>
         {% endfor %}
 
         <!-- Next Button -->
         <li class="page-item {% if page == total_pages %}disabled{% endif %}">
-            <a class="page-link" href="{{ url_for('gallery', page=page+1, search=search_query) }}">Next</a>
+            <a class="page-link" href="{{ url_for('admin_bp.gallery', page=page+1, search=search_query) }}">Next</a>
         </li>
     </ul>
 </nav>

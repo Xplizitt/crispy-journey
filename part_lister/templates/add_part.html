@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Add New Part{% endblock %}
+
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.admin') }}">Admin Overview</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Add New Part</li>
+        </ol>
+    </nav>
+
+    <h2>Add New Part</h2>
+    <hr>
+
+    <div id="admin-alert-container"></div>
+
+    <div class="card">
+        <div class="card-body">
+            <form action="{{ url_for('admin_bp.add_part') }}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="barcode" class="form-label">Barcode:</label>
+                    <input type="text" class="form-control" name="barcode" id="barcode" required>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <input type="text" class="form-control" name="description" id="description" required>
+                </div>
+                <div class="mb-3">
+                    <label for="part_number" class="form-label">Part Number:</label>
+                    <input type="text" class="form-control" name="part_number" id="part_number">
+                </div>
+                <div class="mb-3">
+                    <label for="uom" class="form-label">Unit of Measure:</label>
+                    <input type="text" class="form-control" name="uom" id="uom">
+                </div>
+                <div class="mb-3">
+                    <label for="part_type" class="form-label">Type:</label>
+                    <select class="form-select" name="part_type" id="part_type">
+                        <option value="Purchased">Purchased</option>
+                        <option value="Manufactured">Manufactured</option>
+                        <option value="Customer Supplied">Customer Supplied</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="customer_selection_div" style="display: none;">
+                    <label for="customer_id" class="form-label">Customer:</label>
+                    <select class="form-select" name="customer_id" id="customer_id">
+                        <option value="">Select Customer...</option>
+                        {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3" id="supplier_name_div">
+                    <label for="supplier_name" class="form-label">Supplier Name:</label>
+                    <input type="text" class="form-control" name="supplier_name" id="supplier_name">
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category:</label>
+                    <input type="text" class="form-control" name="category" id="category">
+                </div>
+                <div class="mb-3">
+                    <label for="location" class="form-label">Location:</label>
+                    <input type="text" class="form-control" name="location" id="location">
+                </div>
+                <div class="mb-3">
+                    <label for="stock_quantity" class="form-label">Stock Quantity:</label>
+                    <input type="number" class="form-control" name="stock_quantity" id="stock_quantity" value="0">
+                </div>
+                <div class="mb-3">
+                    <label for="reorder_level" class="form-label">Reorder Level:</label>
+                    <input type="number" class="form-control" name="reorder_level" id="reorder_level" value="0">
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes:</label>
+                    <textarea class="form-control" name="notes" id="notes"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="attachments" class="form-label">Attachments:</label>
+                    <input type="file" class="form-control" name="attachments" id="attachments" multiple>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Part</button>
+                <a href="{{ url_for('admin_bp.admin') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeSelect = document.getElementById('part_type');
+        const custDiv = document.getElementById('customer_selection_div');
+        const suppDiv = document.getElementById('supplier_name_div');
+
+        function toggleFields() {
+            if (typeSelect.value === 'Customer Supplied') {
+                custDiv.style.display = 'block';
+                suppDiv.style.display = 'none';
+            } else {
+                custDiv.style.display = 'none';
+                suppDiv.style.display = 'block';
+            }
+        }
+
+        typeSelect.addEventListener('change', toggleFields);
+        toggleFields();
+    });
+</script>
+{% endblock %}

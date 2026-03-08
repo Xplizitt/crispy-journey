@@ -3,145 +3,63 @@
 {% block title %}Admin - Part Management{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.admin') }}">Admin Overview</a></li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Part Management</h1>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a>
+        <div>
+            <a href="{{ url_for('admin_bp.add_part_form') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> New Part</a>
+            <a href="{{ url_for('admin_bp.gallery') }}" class="btn btn-info"><i class="bi bi-images"></i> Image Gallery</a>
+            <a href="{{ url_for('admin_bp.import_parts_form') }}" class="btn btn-secondary"><i class="bi bi-upload"></i> Import Parts</a>
+            <a href="{{ url_for('admin_bp.logout') }}" class="btn btn-outline-secondary">Logout</a>
+        </div>
     </div>
 
     <hr>
 
     <div id="admin-alert-container"></div>
 
-    <div class="accordion" id="adminAccordion">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingOne">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                    Add New Part
-                </button>
-            </h2>
-            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#adminAccordion">
-                <div class="accordion-body">
-                    <form action="{{ url_for('add_part') }}" method="post" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="barcode" class="form-label">Barcode:</label>
-                            <input type="text" class="form-control" name="barcode" id="barcode">
-                        </div>
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description:</label>
-                            <input type="text" class="form-control" name="description" id="description">
-                        </div>
-                        <div class="mb-3">
-                            <label for="part_number" class="form-label">Part Number:</label>
-                            <input type="text" class="form-control" name="part_number" id="part_number">
-                        </div>
-                        <div class="mb-3">
-                            <label for="uom" class="form-label">Unit of Measure:</label>
-                            <input type="text" class="form-control" name="uom" id="uom">
-                        </div>
-                        <div class="mb-3">
-                            <label for="supplier_name" class="form-label">Supplier Name:</label>
-                            <input type="text" class="form-control" name="supplier_name" id="supplier_name">
-                        </div>
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Category:</label>
-                            <input type="text" class="form-control" name="category" id="category">
-                        </div>
-                        <div class="mb-3">
-                            <label for="location" class="form-label">Location:</label>
-                            <input type="text" class="form-control" name="location" id="location">
-                        </div>
-                        <div class="mb-3">
-                            <label for="stock_quantity" class="form-label">Stock Quantity:</label>
-                            <input type="number" class="form-control" name="stock_quantity" id="stock_quantity" value="0">
-                        </div>
-                        <div class="mb-3">
-                            <label for="reorder_level" class="form-label">Reorder Level:</label>
-                            <input type="number" class="form-control" name="reorder_level" id="reorder_level" value="0">
-                        </div>
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes:</label>
-                            <textarea class="form-control" name="notes" id="notes"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="attachments" class="form-label">Attachments:</label>
-                            <input type="file" class="form-control" name="attachments" id="attachments" multiple>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Add Part</button>
-                    </form>
-                </div>
-            </div>
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Search & Filter</h5>
         </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingTwo">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                    Filter & Export
-                </button>
-            </h2>
-            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#adminAccordion">
-                <div class="accordion-body">
-                    <form action="{{ url_for('admin') }}" method="get" class="row g-3">
-                        <div class="col-md-4">
-                            <label for="filter_description" class="form-label">Part Name:</label>
-                            <input type="text" class="form-control" name="filter_description" id="filter_description" value="{{ request.args.get('filter_description', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="filter_supplier" class="form-label">Supplier:</label>
-                            <input type="text" class="form-control" name="filter_supplier" id="filter_supplier" value="{{ request.args.get('filter_supplier', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="filter_part_number" class="form-label">Part Number:</label>
-                            <input type="text" class="form-control" name="filter_part_number" id="filter_part_number" value="{{ request.args.get('filter_part_number', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="filter_category" class="form-label">Category:</label>
-                            <input type="text" class="form-control" name="filter_category" id="filter_category" value="{{ request.args.get('filter_category', '') }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="filter_location" class="form-label">Location:</label>
-                            <input type="text" class="form-control" name="filter_location" id="filter_location" value="{{ request.args.get('filter_location', '') }}">
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">Filter</button>
-                            <a href="{{ url_for('admin') }}" class="btn btn-secondary">Clear</a>
-                            <a href="{{ url_for('export_parts', **request.args) }}" class="btn btn-success">Export to CSV</a>
-                            <a href="{{ url_for('gallery') }}" class="btn btn-info">Image Gallery</a>
-                        </div>
-                    </form>
+        <div class="card-body">
+            <form action="{{ url_for('admin_bp.admin') }}" method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="search" class="form-label">Search (Barcode, Description, Part Number):</label>
+                    <input type="text" class="form-control" name="search" id="search" value="{{ search_query }}">
                 </div>
-            </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingThree">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                    Import Parts
-                </button>
-            </h2>
-            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#adminAccordion">
-                <div class="accordion-body">
-                    <form action="{{ url_for('import_parts') }}" method="post" enctype="multipart/form-data" class="row g-3">
-                        <div class="col-auto">
-                            <input type="file" class="form-control" name="file" accept=".csv">
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary">Import</button>
-                        </div>
-                    </form>
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Category:</label>
+                    <select class="form-select" name="category" id="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if current_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search"></i> Search</button>
+                    <a href="{{ url_for('admin_bp.admin') }}" class="btn btn-outline-secondary me-2">Clear</a>
+                    <a href="{{ url_for('admin_bp.export_parts', search=search_query, category=current_category) }}" class="btn btn-success"><i class="bi bi-download"></i> Export</a>
+                </div>
+            </form>
         </div>
     </div>
 
 
-    <hr>
-
     <h2>Existing Parts</h2>
-    <form action="{{ url_for('bulk_edit') }}" method="post" id="bulk-edit-form">
+    <form action="{{ url_for('admin_bp.bulk_edit') }}" method="post" id="bulk-edit-form">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <button id="toggle-thumbnails-btn" class="btn btn-secondary">Toggle Thumbnails</button>
             </div>
             <div class="d-flex">
-                <select name="bulk_action" class="form-select me-2" style="width: auto;">
+                <select name="bulk_action" class="form-select me-2" style="width: auto;" aria-label="Bulk actions">
                     <option value="">Bulk Actions...</option>
                     <option value="delete">Delete Selected</option>
                     <option value="set_thumbnail">Set Thumbnail for Selected</option>
@@ -153,13 +71,13 @@
             <table class="table table-striped table-hover align-middle">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" id="select-all-checkbox"></th>
+                        <th><input type="checkbox" id="select-all-checkbox" aria-label="Select all parts"></th>
                         <th class="thumbnail-col">Thumbnail</th>
                         <th>Barcode</th>
                         <th>Description</th>
                         <th>Part Number</th>
                         <th>UOM</th>
-                <th>Type</th>
+                        <th>Type</th>
                         <th>Supplier</th>
                         <th>Category</th>
                         <th>Location</th>
@@ -173,16 +91,17 @@
                 <tbody>
                     {% for part in parts %}
                     <tr class="{% if part['reorder_level'] > 0 and part['stock_quantity'] <= part['reorder_level'] %}table-warning{% endif %}">
-                        <td><input type="checkbox" name="part_ids" value="{{ part.id }}" class="part-checkbox"></td>
+                        <td><input type="checkbox" name="part_ids" value="{{ part.id }}" class="part-checkbox" aria-label="Select part {{ part['barcode'] }}"></td>
                         <td class="thumbnail-col">
                             {% if part.thumbnail %}
-                                <img src="{{ url_for('serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" width="100">
+                                <img src="{{ url_for('core_bp.serve_thumbnail', filename=part.thumbnail) }}" alt="Thumbnail" width="100">
                             {% endif %}
                         </td>
                         <td>{{ part['barcode'] }}</td>
                         <td>{{ part['description'] }}</td>
-                        <td><a href="{{ url_for('part_view', part_id=part.id, origin='admin') }}">{{ part['part_number'] }}</a></td>
+                        <td><a href="{{ url_for('admin_bp.part_view', part_id=part.id, origin='admin') }}">{{ part['part_number'] }}</a></td>
                         <td>{{ part['uom'] }}</td>
+                        <td>{{ part['part_type'] }}</td>
                         <td>{{ part['supplier_name'] }}</td>
                         <td>{{ part['category'] }}</td>
                         <td>{{ part['location'] }}</td>
@@ -191,14 +110,14 @@
                         <td>{{ part['notes'] }}</td>
                         <td>
                             {% if part.attachments %}
-                                <a href="{{ url_for('part_view', part_id=part.id, origin='admin') }}" class="btn btn-sm btn-outline-info">View</a>
+                                <a href="{{ url_for('admin_bp.part_view', part_id=part.id, origin='admin') }}" class="btn btn-sm btn-outline-info">View</a>
                             {% else %}
                                 No Attachments
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('edit_part', part_id=part['id']) }}" class="btn btn-sm btn-outline-primary" aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></a>
-                            <a href="{{ url_for('delete_part', part_id=part['id']) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this part?');" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></a>
+                            <a href="{{ url_for('admin_bp.edit_part', part_id=part['id']) }}" class="btn btn-sm btn-outline-primary" aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a href="{{ url_for('admin_bp.delete_part', part_id=part['id']) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this part?');" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></a>
                         </td>
                     </tr>
                     {% endfor %}
