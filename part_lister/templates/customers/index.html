@@ -1,9 +1,34 @@
 {% extends 'base.html' %}
 {% block title %}Customers - Part Lister{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.admin') }}">Admin Overview</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Customers</li>
+    </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Customers</h1>
     <a href="{{ url_for('customers_bp.create') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add Customer</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Search Customers</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('customers_bp.index') }}" method="get" class="row g-3 align-items-end">
+            <div class="col-md-9">
+                <label for="search" class="form-label">Search (Name, Email, Phone):</label>
+                <input type="text" class="form-control" name="search" id="search" value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search"></i> Search</button>
+                <a href="{{ url_for('customers_bp.index') }}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="table-responsive">

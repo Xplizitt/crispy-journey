@@ -19,13 +19,32 @@ def index():
     if not session.get('logged_in'):
         return redirect(url_for('admin_bp.login'))
 
+    search_query = request.args.get('search', '').strip()
     db = get_db()
-    cur = db.execute('''SELECT w.*, c.name as customer_name FROM work_orders w LEFT JOIN customers c ON w.customer_id = c.id ORDER BY w.created_at DESC''')
+
+    if search_query:
+        query = '''
+            SELECT w.*, c.name as customer_name
+            FROM work_orders w
+            LEFT JOIN customers c ON w.customer_id = c.id
+            WHERE w.title LIKE ? OR w.description LIKE ? OR c.name LIKE ?
+            ORDER BY w.created_at DESC
+        '''
+        wildcard_search = f'%{search_query}%'
+        cur = db.execute(query, [wildcard_search, wildcard_search, wildcard_search])
+    else:
+        cur = db.execute('''
+            SELECT w.*, c.name as customer_name
+            FROM work_orders w
+            LEFT JOIN customers c ON w.customer_id = c.id
+            ORDER BY w.created_at DESC
+        ''')
+
     work_orders = cur.fetchall()
 
     cur_cust = db.execute('SELECT id, name FROM customers ORDER BY name ASC')
     customers = cur_cust.fetchall()
-    return render_template('work_orders/index.html', work_orders=work_orders, customers=customers)
+    return render_template('work_orders/index.html', work_orders=work_orders, customers=customers, search_query=search_query)
 
 @work_orders_bp.route('/create', methods=['POST'])
 def create():
