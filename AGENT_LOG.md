@@ -91,3 +91,7 @@ Changes documented
     *   Replaced text-based "Edit" and "Delete" buttons with icon-only buttons (`bi-pencil`, `bi-trash`) across `index.html`, `admin.html`, and dynamic JS rows in `app.js`. Added `aria-label`s for accessibility.
     *   Created `.Jules/palette.md` to document UI learnings.
 *   **The Reasoning:** To improve the layout and visual professionalism of the interface per the user's request. Following Palette UX guidelines for accessibility and CSS usage.
+- Added `customers` table to database and linked `parts` and `work_orders` to customers via `customer_id`.
+- Created new `customers` Blueprint with full CRUD capability for customer records.
+- Updated Part Lister frontend to include a Customers section in the top nav menu.
+- Associated Parts and Work Orders screens updated to display and select assigned customers.

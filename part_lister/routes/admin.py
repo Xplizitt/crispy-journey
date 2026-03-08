@@ -82,7 +82,10 @@ def admin():
     cur = db.execute('SELECT DISTINCT category FROM parts WHERE category IS NOT NULL AND category != "" ORDER BY category')
     categories = [row['category'] for row in cur.fetchall()]
 
-    return render_template('admin.html', parts=parts, search_query=search_query, categories=categories, current_category=category_filter)
+    cur = db.execute('SELECT id, name FROM customers ORDER BY name ASC')
+    customers = cur.fetchall()
+
+    return render_template('admin.html', parts=parts, search_query=search_query, categories=categories, current_category=category_filter, customers=customers)
 
 @admin_bp.route('/add_part', methods=['POST'])
 def add_part():
@@ -97,6 +100,8 @@ def add_part():
     category = request.form.get('category', '')
     location = request.form.get('location', '')
     part_type = request.form.get('part_type', 'Purchased')
+    customer_id = request.form.get('customer_id')
+    if not customer_id: customer_id = None
 
     try:
         stock_quantity = int(request.form.get('stock_quantity', 0))
@@ -110,9 +115,9 @@ def add_part():
     db = get_db()
     try:
         cur = db.execute('''
-            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', [barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, notes])
+            INSERT INTO parts (barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, customer_id, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', [barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, customer_id, notes])
 
         part_id = cur.lastrowid
 
@@ -166,6 +171,8 @@ def edit_part(part_id):
         location = request.form.get('location', '')
         part_type = request.form.get('part_type', 'Purchased')
         notes = request.form.get('notes', '')
+        customer_id = request.form.get('customer_id')
+        if not customer_id: customer_id = None
 
         try:
             stock_quantity = int(request.form.get('stock_quantity', 0))
@@ -189,9 +196,9 @@ def edit_part(part_id):
 
             db.execute('''
                 UPDATE parts
-                SET barcode=?, description=?, part_number=?, uom=?, supplier_name=?, category=?, location=?, stock_quantity=?, reorder_level=?, part_type=?, notes=?
+                SET barcode=?, description=?, part_number=?, uom=?, supplier_name=?, category=?, location=?, stock_quantity=?, reorder_level=?, part_type=?, customer_id=?, notes=?
                 WHERE id=?
-            ''', [barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, notes, part_id])
+            ''', [barcode, description, part_number, uom, supplier_name, category, location, stock_quantity, reorder_level, part_type, customer_id, notes, part_id])
 
             if changes:
                 db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
@@ -224,7 +231,7 @@ def edit_part(part_id):
         except sqlite3.IntegrityError:
             flash('Error: Barcode already exists')
 
-    cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+    cur = db.execute('''SELECT p.*, c.name as customer_name FROM parts p LEFT JOIN customers c ON p.customer_id = c.id WHERE p.id = ?''', [part_id])
     part = cur.fetchone()
 
     if part is None:
@@ -250,7 +257,7 @@ def edit_part(part_id):
 @admin_bp.route('/part/<int:part_id>')
 def part_view(part_id):
     db = get_db()
-    cur = db.execute('SELECT * FROM parts WHERE id = ?', [part_id])
+    cur = db.execute('''SELECT p.*, c.name as customer_name FROM parts p LEFT JOIN customers c ON p.customer_id = c.id WHERE p.id = ?''', [part_id])
     part = cur.fetchone()
 
     if part is None:

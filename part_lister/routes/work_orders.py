@@ -20,10 +20,12 @@ def index():
         return redirect(url_for('admin_bp.login'))
 
     db = get_db()
-    cur = db.execute('SELECT * FROM work_orders ORDER BY created_at DESC')
+    cur = db.execute('''SELECT w.*, c.name as customer_name FROM work_orders w LEFT JOIN customers c ON w.customer_id = c.id ORDER BY w.created_at DESC''')
     work_orders = cur.fetchall()
 
-    return render_template('work_orders/index.html', work_orders=work_orders)
+    cur_cust = db.execute('SELECT id, name FROM customers ORDER BY name ASC')
+    customers = cur_cust.fetchall()
+    return render_template('work_orders/index.html', work_orders=work_orders, customers=customers)
 
 @work_orders_bp.route('/create', methods=['POST'])
 def create():
@@ -32,13 +34,15 @@ def create():
 
     title = request.form.get('title')
     description = request.form.get('description')
+    customer_id = request.form.get('customer_id')
+    if not customer_id: customer_id = None
 
     if not title:
         flash('Title is required to create a work order.', 'error')
         return redirect(url_for('work_orders_bp.index'))
 
     db = get_db()
-    db.execute('INSERT INTO work_orders (title, description) VALUES (?, ?)', [title, description])
+    db.execute('INSERT INTO work_orders (title, description, customer_id) VALUES (?, ?, ?)', [title, description, customer_id])
     db.commit()
     flash('Work order created successfully.', 'success')
 
@@ -50,7 +54,7 @@ def view(work_order_id):
         return redirect(url_for('admin_bp.login'))
 
     db = get_db()
-    cur = db.execute('SELECT * FROM work_orders WHERE id = ?', [work_order_id])
+    cur = db.execute('''SELECT w.*, c.name as customer_name FROM work_orders w LEFT JOIN customers c ON w.customer_id = c.id WHERE w.id = ?''', [work_order_id])
     work_order = cur.fetchone()
 
     if not work_order:
@@ -122,6 +126,8 @@ def add_task(work_order_id):
         return redirect(url_for('admin_bp.login'))
 
     description = request.form.get('description')
+    customer_id = request.form.get('customer_id')
+    if not customer_id: customer_id = None
 
     if not description:
         flash('Task description is required.', 'error')
@@ -184,6 +190,8 @@ def add_log(work_order_id):
 
     labor_time = request.form.get('labor_time', 0.0, type=float)
     description = request.form.get('description')
+    customer_id = request.form.get('customer_id')
+    if not customer_id: customer_id = None
 
     if not description:
         flash('Log description is required.', 'error')
