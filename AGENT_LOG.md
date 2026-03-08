@@ -91,3 +91,8 @@ Changes documented
     *   Replaced text-based "Edit" and "Delete" buttons with icon-only buttons (`bi-pencil`, `bi-trash`) across `index.html`, `admin.html`, and dynamic JS rows in `app.js`. Added `aria-label`s for accessibility.
     *   Created `.Jules/palette.md` to document UI learnings.
 *   **The Reasoning:** To improve the layout and visual professionalism of the interface per the user's request. Following Palette UX guidelines for accessibility and CSS usage.
+
+- **Date:** $(date +%Y-%m-%d)
+- **Agent:** Palette
+- **Change Description:** Replaced invalid nested `<a>` elements containing icon-only delete buttons with `<div>` containers in `part_lister/templates/edit_part.html`. Added missing `aria-label` and `title` attributes to icon-only delete buttons in `part_lister/templates/edit_part.html` and `part_lister/templates/work_orders/view.html` to improve accessibility for screen readers. Logged critical learning to `.Jules/palette.md`.
+- **Reasoning:** Screen readers fail to properly navigate when interactive elements are nested inside one another, and icon-only buttons without `aria-label` attributes provide no context to visually impaired users.
