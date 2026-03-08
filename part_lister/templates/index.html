@@ -3,7 +3,17 @@
 {% block title %}Part List{% endblock %}
 
 {% block content %}
-    <h1>Part List</h1>
+    <h1>Part List <span id="list-item-count-badge" class="badge bg-secondary ms-2" style="font-size: 0.6em; vertical-align: middle;"></span></h1>
+
+    <!-- Toast container -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+        <div id="add-item-toast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2500">
+            <div class="d-flex">
+                <div class="toast-body" id="add-item-toast-body">Item added.</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
 
     <div id="alert-container">
     {% if error %}
@@ -50,7 +60,7 @@
                 <li><a class="dropdown-item" href="#" data-bs-toggle="collapse" data-bs-target="#create-list-collapse">Create New List...</a></li>
             </ul>
         </div>
-        <button id="toggle-thumbnails-btn" class="btn btn-secondary">Toggle Thumbnails</button>
+        <button id="toggle-thumbnails-btn" class="btn btn-outline-secondary">Show Thumbnails</button>
     </div>
 
     <div class="collapse mb-3" id="create-list-collapse">

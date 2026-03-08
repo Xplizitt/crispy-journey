@@ -38,10 +38,12 @@
         Upload New Images
     </div>
     <div class="card-body">
-        <form action="{{ url_for('admin_bp.gallery') }}" method="post" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="files" class="form-label">Select images to upload:</label>
-                <input type="file" class="form-control" name="files" id="files" multiple required>
+        <form action="{{ url_for('admin_bp.gallery') }}" method="post" enctype="multipart/form-data" id="upload-form">
+            <div id="drop-zone" class="border border-2 border-dashed rounded p-4 text-center mb-3" style="cursor: pointer; transition: background 0.2s;">
+                <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+                <p class="mb-1 text-muted">Drag &amp; drop images here, or click to select</p>
+                <input type="file" class="form-control mt-2" name="files" id="files" multiple required style="display: none;">
+                <span id="drop-zone-label" class="small text-muted">No files selected</span>
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>

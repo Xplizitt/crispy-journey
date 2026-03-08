@@ -57,6 +57,7 @@ def admin():
 
     search_query = request.args.get('search', '').strip()
     category_filter = request.args.get('category', '').strip()
+    low_stock_filter = request.args.get('low_stock', '').strip()
 
     db = get_db()
 
@@ -73,6 +74,9 @@ def admin():
          query += ' AND category = ?'
          params.append(category_filter)
 
+    if low_stock_filter:
+        query += ' AND reorder_level > 0 AND stock_quantity <= reorder_level'
+
     query += ' ORDER BY id DESC'
 
     cur = db.execute(query, params)
@@ -85,7 +89,10 @@ def admin():
     cur = db.execute('SELECT id, name FROM customers ORDER BY name ASC')
     customers = cur.fetchall()
 
-    return render_template('admin.html', parts=parts, search_query=search_query, categories=categories, current_category=category_filter, customers=customers)
+    cur = db.execute('SELECT COUNT(*) as cnt FROM parts WHERE reorder_level > 0 AND stock_quantity <= reorder_level')
+    low_stock_count = cur.fetchone()['cnt']
+
+    return render_template('admin.html', parts=parts, search_query=search_query, categories=categories, current_category=category_filter, customers=customers, low_stock_count=low_stock_count)
 
 
 @admin_bp.route('/add_part_form')
@@ -872,6 +879,25 @@ def build_part(part_id):
         flash(f'An error occurred during build: {e}', 'error')
 
     return redirect(url_for('admin_bp.part_view', part_id=part_id))
+
+@admin_bp.route('/update_stock/<int:part_id>', methods=['POST'])
+def update_stock(part_id):
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not authorized'}), 403
+
+    data = request.get_json()
+    try:
+        new_stock = int(data.get('stock_quantity'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid quantity'}), 400
+
+    db = get_db()
+    db.execute('UPDATE parts SET stock_quantity = ? WHERE id = ?', [new_stock, part_id])
+    db.execute('INSERT INTO audit_log (part_id, action, details) VALUES (?, ?, ?)',
+               (part_id, 'Stock Updated', f"Stock updated to {new_stock} via quick edit"))
+    db.commit()
+    return jsonify({'success': True, 'stock_quantity': new_stock})
+
 
 @admin_bp.route('/gallery_bulk_edit', methods=['POST'])
 def gallery_bulk_edit():

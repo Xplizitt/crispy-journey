@@ -24,7 +24,9 @@ def index():
 
     if search_query:
         query = '''
-            SELECT w.*, c.name as customer_name
+            SELECT w.*, c.name as customer_name,
+              (SELECT COUNT(*) FROM work_order_tasks WHERE work_order_id = w.id) as task_total,
+              (SELECT COUNT(*) FROM work_order_tasks WHERE work_order_id = w.id AND status = 'Complete') as task_complete
             FROM work_orders w
             LEFT JOIN customers c ON w.customer_id = c.id
             WHERE w.title LIKE ? OR w.description LIKE ? OR c.name LIKE ?
@@ -34,7 +36,9 @@ def index():
         cur = db.execute(query, [wildcard_search, wildcard_search, wildcard_search])
     else:
         cur = db.execute('''
-            SELECT w.*, c.name as customer_name
+            SELECT w.*, c.name as customer_name,
+              (SELECT COUNT(*) FROM work_order_tasks WHERE work_order_id = w.id) as task_total,
+              (SELECT COUNT(*) FROM work_order_tasks WHERE work_order_id = w.id AND status = 'Complete') as task_complete
             FROM work_orders w
             LEFT JOIN customers c ON w.customer_id = c.id
             ORDER BY w.created_at DESC
