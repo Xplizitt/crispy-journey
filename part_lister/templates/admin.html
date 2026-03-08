@@ -25,6 +25,17 @@
 
     <div id="admin-alert-container"></div>
 
+    {% if low_stock_count > 0 %}
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span>
+            <strong>{{ low_stock_count }} part{% if low_stock_count != 1 %}s{% endif %}</strong> at or below reorder level.
+            <a href="{{ url_for('admin_bp.admin', low_stock='1') }}" class="alert-link ms-1">Show only low-stock parts</a>
+        </span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <div class="card mb-4">
         <div class="card-header bg-dark text-white">
             <h5 class="mb-0">Search & Filter</h5>
@@ -107,7 +118,13 @@
                         <td>{{ part['supplier_name'] }}</td>
                         <td>{{ part['category'] }}</td>
                         <td>{{ part['location'] }}</td>
-                        <td>{{ part['stock_quantity'] }}</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm inline-stock-edit"
+                                   data-part-id="{{ part['id'] }}"
+                                   value="{{ part['stock_quantity'] }}"
+                                   style="width: 75px;"
+                                   aria-label="Stock quantity for {{ part['barcode'] }}">
+                        </td>
                         <td>{{ part['reorder_level'] }}</td>
                         <td>{{ part['notes'] }}</td>
                         <td>

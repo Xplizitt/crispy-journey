@@ -13,12 +13,15 @@
  *
  * Key Features Handled by this File:
  * - AJAX for adding parts and list items without a full page reload.
- * - Dynamic updates to the UI (e.g., toggling thumbnails, theme switching).
+ * - Dynamic updates to the UI (e.g., toggling thumbnails with button state, theme switching).
  * - Handling for the image gallery modal on the Part View page.
- * - Automatic polling for list updates on the main list page.
+ * - Automatic polling for list updates on the main list page (also updates item count badge).
+ * - Bootstrap Toast notification after barcode add-to-list.
+ * - Inline stock quantity editing in admin table (saves via fetch on change).
+ * - Drag-and-drop upload zone on gallery page.
  *
  * Notes for Future Agents:
-# - Please update this header comment with any major changes or new requirements.
+ * - Please update this header comment with any major changes or new requirements.
  * - This file is for the main interface only. Do not add code here that is intended for the scanner interface.
  * - The scanner interface (`scanner.html`) contains its own, simplified JavaScript.
  * - The code uses modern JavaScript features that are not compatible with old browsers like IE on Windows CE.
@@ -89,13 +92,29 @@
             });
         }
 
+        function updateToggleBtnState(btn) {
+            if (!btn) return;
+            if (showThumbnails) {
+                btn.textContent = 'Hide Thumbnails';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-secondary');
+            } else {
+                btn.textContent = 'Show Thumbnails';
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-outline-secondary');
+            }
+        }
+
         applyThumbnailVisibility();
+        updateToggleBtnState(toggleBtn);
+        updateToggleBtnState(printToggleBtn);
 
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 showThumbnails = !showThumbnails;
                 localStorage.setItem('showThumbnails', showThumbnails);
                 applyThumbnailVisibility();
+                updateToggleBtnState(toggleBtn);
             });
         }
 
@@ -103,6 +122,7 @@
             printToggleBtn.addEventListener('click', () => {
                 showThumbnails = !showThumbnails;
                 applyThumbnailVisibility();
+                updateToggleBtnState(printToggleBtn);
             });
         }
     }
@@ -147,6 +167,14 @@
         }
     }
 
+    function showAddToast(message) {
+        const toastEl = document.getElementById('add-item-toast');
+        if (!toastEl) return;
+        document.getElementById('add-item-toast-body').textContent = message;
+        const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
+        toast.show();
+    }
+
     function setupAjaxAddToList() {
         const form = document.getElementById('add-item-form');
         if (!form) return;
@@ -183,7 +211,13 @@
                 } else {
                     pollList(); // Refresh the list
                     form.reset();
-                    document.getElementById('barcode').focus();
+                    const barcodeInput = document.getElementById('barcode');
+                    if (barcodeInput) { barcodeInput.focus(); barcodeInput.select(); }
+                    if (data.success) {
+                        showAddToast('Quantity updated for ' + barcode);
+                    } else {
+                        showAddToast('Added: ' + (data.description || barcode));
+                    }
                 }
             })
             .catch(error => {
@@ -301,6 +335,11 @@
             .then(response => response.json())
             .then(data => {
                 renderListTable(data);
+                const badge = document.getElementById('list-item-count-badge');
+                if (badge) {
+                    badge.textContent = data.length + (data.length === 1 ? ' item' : ' items');
+                    badge.style.display = data.length > 0 ? '' : 'none';
+                }
             })
             .catch(error => console.error('Polling error:', error));
     }
@@ -311,6 +350,70 @@
 
         pollList(); // Poll immediately on page load
         setInterval(pollList, 5000); // Poll every 5 seconds
+    }
+
+    function setupInlineStockEdit() {
+        document.addEventListener('change', function(e) {
+            const input = e.target.closest('.inline-stock-edit');
+            if (!input) return;
+
+            const partId = input.dataset.partId;
+            const newStock = parseInt(input.value, 10);
+            if (isNaN(newStock)) return;
+
+            input.disabled = true;
+            fetch(`/update_stock/${partId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({stock_quantity: newStock})
+            })
+            .then(r => r.json())
+            .then(data => {
+                input.disabled = false;
+                if (data.error) {
+                    input.classList.add('is-invalid');
+                } else {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                    setTimeout(() => input.classList.remove('is-valid'), 2000);
+                }
+            })
+            .catch(() => {
+                input.disabled = false;
+                input.classList.add('is-invalid');
+            });
+        });
+    }
+
+    function setupGalleryDropZone() {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('files');
+        const label = document.getElementById('drop-zone-label');
+        if (!dropZone || !fileInput) return;
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = 'rgba(13, 110, 253, 0.08)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.background = '';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '';
+            const files = e.dataTransfer.files;
+            fileInput.files = files;
+            label.textContent = files.length + ' file' + (files.length !== 1 ? 's' : '') + ' selected';
+        });
+
+        fileInput.addEventListener('change', () => {
+            const count = fileInput.files.length;
+            label.textContent = count + ' file' + (count !== 1 ? 's' : '') + ' selected';
+        });
     }
 
     // Run on page load
@@ -336,6 +439,8 @@
         setupAjaxAddPart();
         setupListPolling();
         setupImageModal();
+        setupInlineStockEdit();
+        setupGalleryDropZone();
 
         // Specific setup for index page
         if (document.getElementById('add-item-form')) {

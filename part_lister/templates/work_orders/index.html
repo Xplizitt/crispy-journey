@@ -43,6 +43,7 @@
                 <th>Title</th>
                 <th>Customer</th>
                 <th>Status</th>
+                <th>Tasks</th>
                 <th>Created At</th>
                 <th>Actions</th>
             </tr>
@@ -58,6 +59,17 @@
                         {{ wo.status }}
                     </span>
                 </td>
+                <td style="min-width: 100px;">
+                    {% if wo.task_total > 0 %}
+                    {% set pct = ((wo.task_complete / wo.task_total) * 100) | round | int %}
+                    <div class="progress mb-1" style="height: 6px;" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ wo.task_complete }}/{{ wo.task_total }} tasks complete">
+                        <div class="progress-bar {% if pct == 100 %}bg-success{% elif pct > 0 %}bg-warning{% else %}bg-secondary{% endif %}" style="width: {{ pct }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ wo.task_complete }}/{{ wo.task_total }}</small>
+                    {% else %}
+                    <small class="text-muted">—</small>
+                    {% endif %}
+                </td>
                 <td>{{ wo.created_at }}</td>
                 <td>
                     <a href="{{ url_for('work_orders_bp.view', work_order_id=wo.id) }}" class="btn btn-sm btn-info">View</a>
@@ -65,7 +77,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="text-center">No work orders found.</td>
+                <td colspan="7" class="text-center">No work orders found.</td>
             </tr>
             {% endfor %}
         </tbody>

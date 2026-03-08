@@ -10,6 +10,15 @@
             .no-print {
                 display: none;
             }
+            .print-header {
+                display: block !important;
+            }
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+        .print-header {
+            display: none;
         }
         body {
             font-size: 12px; /* Smaller font for printing */
@@ -29,13 +38,17 @@
 </head>
 <body>
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center my-3">
-            <h1>Part List</h1>
-            <button onclick="window.print()" class="btn btn-primary no-print">Print</button>
+        <div class="print-header mb-2">
+            <strong>{{ list_name }}</strong> &mdash; Printed {{ print_date }}
+        </div>
+        <div class="d-flex justify-content-between align-items-center my-3 no-print">
+            <h1>{{ list_name }}</h1>
+            <button onclick="window.print()" class="btn btn-primary">Print</button>
         </div>
         <table class="table">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th>Thumbnail</th>
                     <th>Barcode</th>
                     <th>Description</th>
@@ -46,6 +59,7 @@
             <tbody>
                 {% for item in list_items %}
                 <tr>
+                    <td>{{ loop.index }}</td>
                     <td>
                         {% if item.thumbnail %}
                             <img src="{{ url_for('serve_thumbnail', filename=item.thumbnail, _external=True) }}" alt="Thumbnail" width="50">
@@ -58,7 +72,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5">No items in list.</td>
+                    <td colspan="6">No items in list.</td>
                 </tr>
                 {% endfor %}
             </tbody>

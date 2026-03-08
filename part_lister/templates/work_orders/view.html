@@ -3,7 +3,7 @@
 {% block title %}Work Order #{{ work_order.id }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-2 border-bottom">
     <h1 class="h2">Work Order #{{ work_order.id }}: {{ work_order.title }}</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{{ url_for('work_orders_bp.index') }}" class="btn btn-sm btn-outline-secondary me-2">
@@ -20,15 +20,43 @@
     </div>
 </div>
 
+{% set tasks_total = tasks | length %}
+{% set tasks_complete = tasks | selectattr('status', 'equalto', 'Complete') | list | length %}
+{% if tasks_total > 0 %}
+{% set pct = ((tasks_complete / tasks_total) * 100) | round | int %}
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <small class="text-muted">Task Progress</small>
+        <small class="text-muted">{{ tasks_complete }} / {{ tasks_total }} complete</small>
+    </div>
+    <div class="progress" style="height: 8px;" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar {% if pct == 100 %}bg-success{% elif pct > 0 %}bg-warning{% else %}bg-secondary{% endif %}" style="width: {{ pct }}%"></div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <!-- Work Order Details & Tasks -->
     <div class="col-md-8">
         <div class="card mb-4">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Tasks</h5>
-                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#addTaskCollapse" aria-expanded="false" aria-controls="addTaskCollapse">
                     <i class="bi bi-plus"></i> Add Task
                 </button>
+            </div>
+            <div class="collapse" id="addTaskCollapse">
+                <div class="card-body border-bottom">
+                    <form action="{{ url_for('work_orders_bp.add_task', work_order_id=work_order.id) }}" method="POST" class="row g-2 align-items-end">
+                        <div class="col-md-9">
+                            <label class="form-label mb-1">Task Description</label>
+                            <textarea class="form-control form-control-sm" name="description" rows="2" required></textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Add Task</button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="card-body p-0">
                 <ul class="list-group list-group-flush">
@@ -161,9 +189,26 @@
         <div class="card mb-4">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Labor Log <span class="badge bg-secondary ms-2">Total: {{ total_labor|round(2) }} hrs</span></h5>
-                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addLogModal">
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#addLogCollapse" aria-expanded="false" aria-controls="addLogCollapse">
                     <i class="bi bi-plus"></i> Add Log
                 </button>
+            </div>
+            <div class="collapse" id="addLogCollapse">
+                <div class="card-body border-bottom">
+                    <form action="{{ url_for('work_orders_bp.add_log', work_order_id=work_order.id) }}" method="POST" class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label mb-1">Labor Time (hrs)</label>
+                            <input type="number" step="0.25" min="0" class="form-control form-control-sm" name="labor_time" value="0.0">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label mb-1">Description</label>
+                            <input type="text" class="form-control form-control-sm" name="description" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Save Log</button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="card-body p-0">
                 <ul class="list-group list-group-flush">
@@ -225,9 +270,21 @@
         <div class="card">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">WO Attachments</h5>
-                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#uploadWOModal">
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#uploadWOCollapse" aria-expanded="false" aria-controls="uploadWOCollapse" aria-label="Attach file to work order">
                     <i class="bi bi-paperclip"></i>
                 </button>
+            </div>
+            <div class="collapse" id="uploadWOCollapse">
+                <div class="card-body border-bottom">
+                    <form action="{{ url_for('work_orders_bp.upload_attachment', work_order_id=work_order.id) }}" method="POST" enctype="multipart/form-data" class="row g-2 align-items-end">
+                        <div class="col-9">
+                            <input type="file" class="form-control form-control-sm" name="file" required>
+                        </div>
+                        <div class="col-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Upload</button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="card-body">
                 <div class="list-group">
@@ -244,72 +301,6 @@
     </div>
 </div>
 
-<!-- Modals -->
-<div class="modal fade" id="addTaskModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content text-dark">
-            <form action="{{ url_for('work_orders_bp.add_task', work_order_id=work_order.id) }}" method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Task</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Task Description</label>
-                        <textarea class="form-control" name="description" rows="3" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add Task</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="addLogModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content text-dark">
-            <form action="{{ url_for('work_orders_bp.add_log', work_order_id=work_order.id) }}" method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Labor Log</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Labor Time (Hours)</label>
-                        <input type="number" step="0.25" min="0" class="form-control" name="labor_time" value="0.0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description of Work</label>
-                        <textarea class="form-control" name="description" rows="3" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save Log</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="uploadWOModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content text-dark">
-            <form action="{{ url_for('work_orders_bp.upload_attachment', work_order_id=work_order.id) }}" method="POST" enctype="multipart/form-data">
-                <div class="modal-header">
-                    <h5 class="modal-title">Attach File to Work Order</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="file" class="form-control" name="file" required>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Per-task modals remain for Add Part and Upload Photo -->
 
 {% endblock %}

@@ -212,15 +212,24 @@ def delete_list_item(item_id):
 
 @core_bp.route('/print')
 def print_list():
+    from datetime import date
     db = get_db()
+    active_list_id = session.get('active_list_id')
+    active_list = None
+    if active_list_id:
+        cur = db.execute('SELECT name FROM lists WHERE id = ?', [active_list_id])
+        active_list = cur.fetchone()
     cur = db.execute('''
         SELECT p.barcode, p.description, li.quantity, p.uom, p.thumbnail
         FROM list_items li
         JOIN parts p ON li.part_id = p.id
+        WHERE li.list_id = ?
         ORDER BY li.id
-    ''')
+    ''', [active_list_id] if active_list_id else [0])
     list_items = cur.fetchall()
-    return render_template('print.html', list_items=list_items)
+    list_name = active_list['name'] if active_list else 'Part List'
+    print_date = date.today().strftime('%B %d, %Y')
+    return render_template('print.html', list_items=list_items, list_name=list_name, print_date=print_date)
 
 @core_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
