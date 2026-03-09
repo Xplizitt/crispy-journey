@@ -16,6 +16,7 @@ pluggy==1.6.0
 pyee==13.0.0
 Pygments==2.19.2
 pytest==8.4.2
+pytest-cov==6.1.1
 pytest-base-url==2.1.0
 pytest-playwright==0.7.1
 python-slugify==8.0.4
