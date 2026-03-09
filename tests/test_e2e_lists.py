@@ -1,33 +1,39 @@
 import os
+import pytest
+
+playwright = pytest.importorskip("playwright")
 from playwright.sync_api import Page, expect
 
-def test_multiple_list_workflow(page: Page):
+BASE_URL = "http://127.0.0.1:5000"
+
+
+@pytest.mark.e2e
+def test_multiple_list_workflow(page: Page, tmp_path):
     """
     Tests the full user workflow for creating, switching, and managing multiple lists.
     """
     # --- 1. DB Setup & Add Part to DB ---
-    # It's better to do this setup via API calls or DB fixtures in a real test suite,
-    # but for this task, using the UI to set up state is acceptable.
-    os.system('python part_lister/database.py')
-    with open('part_to_add.csv', 'w') as f:
-        f.write('Barcode,Description,Part Number,UOM,Supplier Name\n')
-        f.write('E2E-TEST-001,E2E Test Part,E2E-01,Each,E2E Supplier\n')
+    csv_file = tmp_path / "part_to_add.csv"
+    csv_file.write_text(
+        'Barcode,Description,Part Number,UOM,Supplier Name\n'
+        'E2E-TEST-001,E2E Test Part,E2E-01,Each,E2E Supplier\n'
+    )
 
     # Login
-    page.goto("http://127.0.0.1:5000/login")
+    page.goto(f"{BASE_URL}/login")
     page.get_by_placeholder("Password").fill("admin")
     page.get_by_role("button", name="Login").click()
     expect(page.get_by_text("You were logged in")).to_be_visible()
 
     # Import the part
-    page.goto("http://127.0.0.1:5000/admin")
+    page.goto(f"{BASE_URL}/admin")
     page.get_by_role("link", name="Import Parts").click()
-    page.locator("input[name='file']").set_input_files('part_to_add.csv')
+    page.locator("input[name='file']").set_input_files(str(csv_file))
     page.get_by_role("button", name="Import", exact=True).click()
     expect(page.get_by_text("Successfully imported 1 parts.")).to_be_visible()
 
     # --- 2. Verify Default List and Add Item ---
-    page.goto("http://127.0.0.1:5000/")
+    page.goto(f"{BASE_URL}/")
     expect(page.get_by_role("button", name="Current List: Default List")).to_be_visible()
 
     # Add item via AJAX
@@ -53,6 +59,3 @@ def test_multiple_list_workflow(page: Page):
     # --- 6. Verify Original Item is Present ---
     expect(page.get_by_role("button", name="Current List: Default List")).to_be_visible()
     expect(page.locator("tr", has_text="E2E-TEST-001")).to_be_visible()
-
-    # Clean up the test file
-    os.remove('part_to_add.csv')
