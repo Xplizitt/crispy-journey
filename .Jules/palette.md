@@ -6,3 +6,7 @@
 ## Layout and Spacing
 - Adding `align-middle` to Bootstrap tables ensures that text in rows containing thumbnail images aligns properly with the center of the image, significantly improving the visual appearance of the list.
 - Adding a subtle shadow (`shadow-sm`) to main content containers helps separate the content from the background, adding depth to the page layout.
+
+## 2024-03-09 - Accessibility for Work Order Icon-only Buttons
+**Learning:** Icon-only buttons used for actions such as deleting work order tasks or task parts are generally not accessible because screen readers announce them generically (e.g., as "button"). Adding a tool-tip context title doesn't fix this for screen readers.
+**Action:** Consistently supply `aria-label` attributes to these icon-only components across all lists (e.g., `aria-label="Delete task"`) to provide proper context to all user interfaces.
