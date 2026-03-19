@@ -94,10 +94,12 @@
                         </div>
                     </div>
                 {% else %}
-                     <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        {{ attachment.filename }}
-                        <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this attachment?');"><i class="bi bi-trash"></i></a>
-                    </a>
+                     <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('uploaded_file', filename=attachment.filename) }}" target="_blank" class="text-decoration-none">
+                            {{ attachment.filename }}
+                        </a>
+                        <a href="{{ url_for('delete_attachment', attachment_id=attachment.id) }}" class="btn btn-sm btn-outline-danger" aria-label="Delete attachment" title="Delete attachment" onclick="return confirm('Are you sure you want to delete this attachment?');"><i class="bi bi-trash"></i></a>
+                    </div>
                 {% endif %}
             {% else %}
                 <div class="list-group-item">No attachments.</div>
