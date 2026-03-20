@@ -6,3 +6,6 @@
 ## Layout and Spacing
 - Adding `align-middle` to Bootstrap tables ensures that text in rows containing thumbnail images aligns properly with the center of the image, significantly improving the visual appearance of the list.
 - Adding a subtle shadow (`shadow-sm`) to main content containers helps separate the content from the background, adding depth to the page layout.
+## 2024-05-18 - Fix invalid nested anchor tag
+**Learning:** Invalid nested HTML tags (like `<a>` inside `<a>`) can cause accessibility issues and affect how screen readers parse content.
+**Action:** Ensure valid HTML structure by replacing nested `<a>` tags with alternative layout structures like separate `<div>` containers or using buttons.
