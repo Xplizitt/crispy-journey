@@ -83,7 +83,7 @@
                                 <td>{{ part.part_number or part.barcode }}</td>
                                 <td>{{ part.description }}</td>
                                 <td>
-                                    <a href="{{ url_for('admin_bp.part_view', part_id=part.id) }}" class="btn btn-sm btn-info" title="View Part"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ url_for('admin_bp.part_view', part_id=part.id) }}" class="btn btn-sm btn-info" aria-label="View Part" title="View Part"><i class="bi bi-eye"></i></a>
                                 </td>
                             </tr>
                             {% else %}
@@ -130,7 +130,7 @@
                                 </td>
                                 <td>{{ wo.created_at[:10] }}</td>
                                 <td>
-                                    <a href="{{ url_for('work_orders_bp.view', work_order_id=wo.id) }}" class="btn btn-sm btn-info" title="View Work Order"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ url_for('work_orders_bp.view', work_order_id=wo.id) }}" class="btn btn-sm btn-info" aria-label="View Work Order" title="View Work Order"><i class="bi bi-eye"></i></a>
                                 </td>
                             </tr>
                             {% else %}
