@@ -80,7 +80,7 @@
                                         <li class="d-flex justify-content-between align-items-center mb-1">
                                             <span>{{ part.quantity }}x {{ part.part_number }} - {{ part.description }} ({{ part.barcode }})</span>
                                             <form action="{{ url_for('work_orders_bp.delete_task_part', work_order_id=work_order.id, task_part_id=part.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this part?');">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash"></i></button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></button>
                                             </form>
                                         </li>
                                         {% endfor %}
@@ -118,7 +118,7 @@
                                     <i class="bi bi-camera"></i> Attach
                                 </button>
                                 <form action="{{ url_for('work_orders_bp.delete_task', work_order_id=work_order.id, task_id=task.id) }}" method="POST" class="mt-auto" onsubmit="return confirm('Are you sure you want to delete this task?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="bi bi-trash"></i> Delete Task</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100" aria-label="Delete Task" title="Delete Task"><i class="bi bi-trash"></i> Delete Task</button>
                                 </form>
                             </div>
                         </div>
@@ -223,7 +223,7 @@
                                 {% endif %}
                             </div>
                             <form action="{{ url_for('work_orders_bp.delete_log', work_order_id=work_order.id, log_id=log.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this log?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></button>
                             </form>
                         </div>
 
