@@ -6,3 +6,6 @@
 ## Layout and Spacing
 - Adding `align-middle` to Bootstrap tables ensures that text in rows containing thumbnail images aligns properly with the center of the image, significantly improving the visual appearance of the list.
 - Adding a subtle shadow (`shadow-sm`) to main content containers helps separate the content from the background, adding depth to the page layout.
+## 2024-04-03 - Add aria-label to delete attachment icon in edit part
+**Learning:** Icon-only buttons for managing secondary elements (like attachments) also need accessibility labels, not just the main content lists.
+**Action:** Always check secondary panels or list groups when scanning for missing aria-labels on icon buttons.
