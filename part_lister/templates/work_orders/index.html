@@ -72,7 +72,7 @@
                 </td>
                 <td>{{ wo.created_at }}</td>
                 <td>
-                    <a href="{{ url_for('work_orders_bp.view', work_order_id=wo.id) }}" class="btn btn-sm btn-info">View</a>
+                    <a href="{{ url_for('work_orders_bp.view', work_order_id=wo.id) }}" class="btn btn-sm btn-info" aria-label="View Work Order {{ wo.title }}">View</a>
                 </td>
             </tr>
             {% else %}
