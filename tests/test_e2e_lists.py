@@ -44,7 +44,7 @@ def test_multiple_list_workflow(page: Page):
     # --- 4. Verify New List is Active and Empty ---
     expect(page.get_by_text("List 'E2E Test List' created successfully.")).to_be_visible()
     expect(page.get_by_role("button", name="Current List: E2E Test List")).to_be_visible()
-    expect(page.get_by_text("No items in list.")).to_be_visible()
+    expect(page.get_by_text("This list is empty")).to_be_visible()
 
     # --- 5. Switch Back to Default List ---
     page.get_by_role("button", name="Current List: E2E Test List").click()
