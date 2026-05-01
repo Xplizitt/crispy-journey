@@ -1,8 +1,3 @@
-# Palette UX Learnings
-
-## Icons for Actions
-- When replacing text-based buttons (like "Edit" or "Delete") with icon-only buttons, it is critical to include `aria-label` attributes to ensure the buttons remain accessible to screen readers. For example: `<a href="..." aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></a>`.
-
-## Layout and Spacing
-- Adding `align-middle` to Bootstrap tables ensures that text in rows containing thumbnail images aligns properly with the center of the image, significantly improving the visual appearance of the list.
-- Adding a subtle shadow (`shadow-sm`) to main content containers helps separate the content from the background, adding depth to the page layout.
+## 2026-05-01 - Missing Screen Reader Context on UI Icons
+**Learning:** Found an accessibility anti-pattern where Bootstrap icons (`<i class="bi bi-..."></i>`) nested inside `<button>` or `<a>` tags were used solely for visual action representation (e.g., trash can for delete, eye for view) without any `aria-label` or `title` attributes on the parent interactive element. This made the actions completely opaque to screen reader users and lacked hover tooltips for mouse users.
+**Action:** Always ensure that icon-only interactive elements (`button`, `a`) have an explicit `aria-label` attribute for screen readers and a `title` attribute for visual hover context, especially in dense UI views like lists or galleries.
