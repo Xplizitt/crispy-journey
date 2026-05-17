@@ -1,8 +1,3 @@
-# Palette UX Learnings
-
-## Icons for Actions
-- When replacing text-based buttons (like "Edit" or "Delete") with icon-only buttons, it is critical to include `aria-label` attributes to ensure the buttons remain accessible to screen readers. For example: `<a href="..." aria-label="Edit" title="Edit"><i class="bi bi-pencil"></i></a>`.
-
-## Layout and Spacing
-- Adding `align-middle` to Bootstrap tables ensures that text in rows containing thumbnail images aligns properly with the center of the image, significantly improving the visual appearance of the list.
-- Adding a subtle shadow (`shadow-sm`) to main content containers helps separate the content from the background, adding depth to the page layout.
+## YYYY-MM-DD - Missing aria-labels on icon-only buttons
+**Learning:** Found several Bootstrap icon-only `<a>` tags acting as buttons in Jinja2 templates (e.g., `bi-eye`, `bi-trash`) without `aria-label` or `title` attributes. This completely hides the button's purpose from screen readers and lacks visual tooltip context.
+**Action:** Always ensure that whenever an interactive element lacks descriptive text, an `aria-label` (for screen readers) and a `title` (for mouse hover tooltips) are explicitly provided to improve both accessibility and general UX.
