@@ -82,11 +82,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" style="text-align: center; padding: 40px; color: #666;">
-                    <div style="font-size: 2em; margin-bottom: 10px;">&#128230;</div>
-                    <p style="margin: 0 0 5px 0;">No items in list.</p>
-                    <small>Scan a barcode or enter it above to add items.</small>
-                </td>
+                <td colspan="4">No items in list.</td>
             </tr>
             {% endfor %}
         </tbody>
