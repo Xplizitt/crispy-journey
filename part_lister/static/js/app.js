@@ -303,7 +303,16 @@
         tableBody.innerHTML = '';
 
         if (items.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="8">No items in list.</td></tr>';
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8">
+                        <div class="text-center p-4 text-muted">
+                            <i class="bi bi-box-seam" style="font-size: 2rem; color: #6c757d;" aria-hidden="true"></i>
+                            <h5 class="mt-2">Your list is empty</h5>
+                            <p class="mb-0">Scan a barcode or add an item manually to get started.</p>
+                        </div>
+                    </td>
+                </tr>`;
             return;
         }
 
