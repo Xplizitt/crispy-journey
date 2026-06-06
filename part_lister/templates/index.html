@@ -111,7 +111,13 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8">No items in list.</td>
+                    <td colspan="8" class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="bi bi-box-seam display-4 text-muted mb-3 d-block"></i>
+                            <h4 class="text-muted">Your list is empty</h4>
+                            <p class="text-muted mb-0">Scan a barcode or enter it above to start adding items.</p>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
