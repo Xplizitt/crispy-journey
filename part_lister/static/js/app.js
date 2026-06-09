@@ -303,7 +303,17 @@
         tableBody.innerHTML = '';
 
         if (items.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="8">No items in list.</td></tr>';
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center text-muted">
+                            <i class="bi bi-box-seam display-4 mb-3"></i>
+                            <h4 class="mb-2">Your list is empty</h4>
+                            <p class="mb-0">Scan a barcode or use the form above to add items to your list.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
