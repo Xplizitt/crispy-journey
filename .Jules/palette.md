@@ -6,3 +6,7 @@
 ## Layout and Spacing
 - Adding `align-middle` to Bootstrap tables ensures that text in rows containing thumbnail images aligns properly with the center of the image, significantly improving the visual appearance of the list.
 - Adding a subtle shadow (`shadow-sm`) to main content containers helps separate the content from the background, adding depth to the page layout.
+
+## 2026-06-11 - Structured Empty States
+**Learning:** Plain text empty states in tables or lists are a missed opportunity to guide the user. Replacing them with structured components that include an icon, clear title, and instructional text improves user guidance and overall experience.
+**Action:** When encountering empty states, implement a structured empty state component that includes a descriptive icon (e.g., `bi-box-seam`), a clear title (e.g., "Your list is empty"), and instructional text explaining how to populate the data.
