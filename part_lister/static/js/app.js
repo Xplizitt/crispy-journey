@@ -303,7 +303,15 @@
         tableBody.innerHTML = '';
 
         if (items.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="8">No items in list.</td></tr>';
+            tableBody.innerHTML = `<tr>
+                <td colspan="8">
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-card-checklist display-4 d-block mb-3"></i>
+                        <h5>Your list is empty</h5>
+                        <p class="mb-0">Add items using the form above or by scanning barcodes.</p>
+                    </div>
+                </td>
+            </tr>`;
             return;
         }
 
