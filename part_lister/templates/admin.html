@@ -139,6 +139,16 @@
                             <a href="{{ url_for('admin_bp.delete_part', part_id=part['id']) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this part?');" aria-label="Delete" title="Delete"><i class="bi bi-trash"></i></a>
                         </td>
                     </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="15" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center text-muted">
+                                <i class="bi bi-box-seam fs-1 mb-2"></i>
+                                <h5 class="mb-1">No parts found</h5>
+                                <p class="mb-0">There are no parts in the database matching your criteria.</p>
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
