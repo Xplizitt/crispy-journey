@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 app.log
 part_to_add.csv
+venv/
